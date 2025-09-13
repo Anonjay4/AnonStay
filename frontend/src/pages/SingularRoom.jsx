@@ -273,30 +273,48 @@ const SingularRoom = () => {
           toast.success(data.message)
           
           if (bookingData.paymentMethod === "Paystack") {
-            try {
-              const bookingsResponse = await axios.get("/api/bookings/user")
-              if (bookingsResponse.data.success && bookingsResponse.data.bookings.length > 0) {
-                const latestBooking = bookingsResponse.data.bookings[0]
-                
-                const paymentResponse = await axios.post("/api/bookings/paystack-payment", {
-                  bookingId: latestBooking._id
-                })
-                
-                if (paymentResponse.data.success) {
-                  window.location.href = paymentResponse.data.url
-                  return
-                } else {
-                  toast.error("Failed to initialize payment")
-                }
-              }
-            } catch (paymentError) {
-              console.error("Payment initialization error:", paymentError)
-              toast.error("Payment initialization failed. Please try again from your bookings page.")
-            }
+  try {
+    const bookingsResponse = await axios.get("/api/bookings/user")
+    if (bookingsResponse.data.success && bookingsResponse.data.bookings.length > 0) {
+      const latestBooking = bookingsResponse.data.bookings[0]
+      
+      const paymentResponse = await axios.post("/api/bookings/paystack-payment", {
+        bookingId: latestBooking._id
+      })
+      
+      if (paymentResponse.data.success) {
+        // Use Paystack popup instead of redirect
+        const handler = PaystackPop.setup({
+          key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728',
+          email: paymentResponse.data.email,
+          amount: paymentResponse.data.amount,
+          reference: paymentResponse.data.reference,
+          callback: function(response) {
+            // Payment successful - verify the payment
+            toast.success('Payment successful! Verifying...')
+            // You can call your verify endpoint here if needed
+            navigate("/my-bookings")
+            scrollTo(0, 0)
+          },
+          onClose: function() {
+            toast.info('Payment window closed')
           }
-          
-          navigate("/my-bookings")
-          scrollTo(0, 0)
+        })
+        handler.openIframe()
+        return
+      } else {
+        toast.error("Failed to initialize payment")
+      }
+    }
+  } catch (paymentError) {
+    console.error("Payment initialization error:", paymentError)
+    toast.error("Payment initialization failed. Please try again.")
+  }
+          } else {
+            // For "Pay At Hotel" - this should work fine
+            navigate("/my-bookings")
+            scrollTo(0, 0)
+          }
         } else {
           toast.error(data.message)
         }
