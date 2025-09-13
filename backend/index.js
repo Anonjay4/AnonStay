@@ -16,17 +16,7 @@ const app = express()
 connectDB()
 // Middlewares
 app.use(express.json())
-const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-app.use(cors({
-  origin: (origin, callback) => {
-    // allow non-browser tools like Postman
-    if (!origin) return callback(null, true);
-    if (clientUrl === origin) return callback(null, true);
-    // You can allow more origins by checking an array
-    return callback(new Error("CORS policy: origin not allowed"), false);
-  },
-  credentials: true
-}));
+app.use(cors({ origin: ["http://localhost:5173", "https://anonstay.netlify.app"], credentials: true }))
 app.use(cookieParser())
 
 // API ENDPOINTS
