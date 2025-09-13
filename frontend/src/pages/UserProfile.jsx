@@ -349,7 +349,7 @@ const fetchUserBookings = async () => {
                     <div key={booking._id} className='p-6 hover:bg-gray-800/50 transition-colors'>
                       <div className='flex gap-4'>
                         <img 
-                          src={`http://localhost:4000/images/${booking.room.images[0]}`} 
+                          src={`https://anonstay-production.up.railway.app/images/${booking.room.images[0]}`} 
                           alt={booking.room.roomType} 
                           className='w-16 h-16 rounded-lg object-cover'
                         />

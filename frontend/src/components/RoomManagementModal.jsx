@@ -19,7 +19,7 @@ const RoomManagementModal = ({ room, isOpen, onClose, onUpdate }) => {
   const handlePriceUpdate = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/room/update-price/${room._id}`, {
+      const response = await fetch(`https://anonstay-production.up.railway.app/api/room/update-price/${room._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ const RoomManagementModal = ({ room, isOpen, onClose, onUpdate }) => {
   const handleDiscountUpdate = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/room/update-discount/${room._id}`, {
+      const response = await fetch(`https://anonstay-production.up.railway.app/api/room/update-discount/${room._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ const RoomManagementModal = ({ room, isOpen, onClose, onUpdate }) => {
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/room/remove-discount/${room._id}`, {
+      const response = await fetch(`https://anonstay-production.up.railway.app/api/room/remove-discount/${room._id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
