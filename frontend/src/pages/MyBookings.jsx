@@ -69,25 +69,24 @@ const handlePayment = async(bookingId) => {
       })
       
       if (data.success) {
-        toast.success("Booking cancelled successfully")
-        // Update local state
-        setBookingData(prev => 
-          prev.map(booking => 
-            booking._id === selectedBookingId 
-              ? { ...booking, status: "cancelled", cancelledAt: new Date() }
-              : booking
-          )
+      toast.success("Booking cancelled successfully")
+      // Use updated booking from backend
+      const updatedBooking = data.booking
+      setBookingData(prev =>
+        prev.map(booking =>
+          booking._id === updatedBooking._id ? updatedBooking : booking
         )
-      } else {
-        toast.error(data.message)
-      }
+      )
+    } else {
+      toast.error(data.message)
+    }
+
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to cancel booking")
     } finally {
       setCancelling(prev => ({ ...prev, [selectedBookingId]: false }))
-      setShowCancelModal(false)
-      setSelectedBookingId(null)
-      setCancellationReason('')
+        closeCancelModal()
+
     }
   }
 

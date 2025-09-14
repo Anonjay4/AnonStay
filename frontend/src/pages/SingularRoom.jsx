@@ -186,37 +186,36 @@ const SingularRoom = () => {
     return amenities.split(",");
   };
 
-  const checkRoomAvailability = async() => {
-    try {
-      if (bookingData.checkIn >= bookingData.checkOut) {
-        toast.error("Check-in date must be before check-out date")
-        return
-      }
-      if (bookingData.persons <= 0) {
-        toast.error("Number of persons must be greater than 0")
-        return
-      }
-      const { data } = await axios.post("/api/bookings/check-availability", {
-        room: room._id,
-        checkInDate: bookingData.checkIn,
-        checkOutDate: bookingData.checkOut,
-      })
-      if (data.success) {
-        if (data.isAvailable) {
-          setIsAvailable(true)
-          toast.success("Room is available")
-        }else{
-          setIsAvailable(false)
-          toast.error("Room is not available")
-        }
-      }else{
-        toast.error(data.message)
-      }
-        
-    } catch (error) {
-      toast.error(error.message)
+ const checkRoomAvailability = async () => {
+  setLoading(true);
+  try {
+    if (bookingData.checkIn >= bookingData.checkOut) {
+      toast.error("Check-in date must be before check-out date")
+      return
     }
+    if (bookingData.persons <= 0) {
+      toast.error("Number of persons must be greater than 0")
+      return
+    }
+    const { data } = await axios.post("/api/bookings/check-availability", {
+      room: room._id,
+      checkInDate: bookingData.checkIn,
+      checkOutDate: bookingData.checkOut,
+    })
+    if (data.success) {
+      setIsAvailable(data.isAvailable)
+      data.isAvailable 
+        ? toast.success("Room is available") 
+        : toast.error("Room is not available")
+    } else {
+      toast.error(data.message)
+    }
+  } catch (error) {
+    toast.error(error.message)
+  } finally {
+    setLoading(false)   // 🔥 ensures button resets
   }
+}
   
   const formatPhone = (phone) => {
     if (!phone) return "";
