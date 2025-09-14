@@ -28,56 +28,13 @@ const MyBookings = () => {
 
 const handlePayment = async(bookingId) => {
   try {
-    const { data } = await axios.post("/api/bookings/paystack-payment", { bookingId })
+    const { data } = await axios.post("/api/bookings/mock-payment", { bookingId })
     if (data.success) {
-      
-      // Check if this is a mock payment
-      if (data.isMockPayment) {
-        toast.success('Redirecting to mock payment processor...');
-        // Get the booking details for amount
-        const booking = bookingData.find(b => b._id === bookingId);
-        const amount = booking ? booking.totalPrice : 0;
-        navigate(`/mock-payment?reference=${data.reference}&amount=${amount}`);
-        return;
-      }
-      
-      // Check if PaystackPop is available
-      if (typeof PaystackPop !== 'undefined') {
-        // Use Paystack Popup
-        const handler = PaystackPop.setup({
-          key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728',
-          email: data.email,
-          amount: data.amount,
-          currency: 'NGN',
-          ref: data.reference,
-          callback: function(response) {
-            toast.success('Payment successful! Verifying...')
-            
-            // Verify payment
-            axios.post("/api/bookings/verify-payment", {
-              reference: response.reference
-            }).then((verifyResponse) => {
-              if (verifyResponse.data.success) {
-                toast.success("Payment verified successfully!")
-                // Refresh bookings
-                fetchMyBookings()
-              } else {
-                toast.error("Payment verification failed")
-              }
-            }).catch((verifyError) => {
-              toast.error("Payment verification error")
-              console.error(verifyError)
-            })
-          },
-          onClose: function() {
-            toast.info('Payment cancelled')
-          }
-        })
-        handler.openIframe()
-      } else {
-        // Fallback to redirect
-        window.location.href = data.url
-      }
+      toast.success('Redirecting to payment processor...');
+      // Get the booking details for amount
+      const booking = bookingData.find(b => b._id === bookingId);
+      const amount = booking ? booking.totalPrice : 0;
+      navigate(`/mock-payment?reference=${data.reference}&amount=${amount}`);
     } else {
       toast.error(data.message)
     }
@@ -85,8 +42,6 @@ const handlePayment = async(bookingId) => {
     toast.error(error.message)
   }
 }
-
-
 
   const handleCancelBooking = async () => {
     if (!selectedBookingId) return
@@ -345,9 +300,12 @@ const handlePayment = async(bookingId) => {
                       <div className='col-span-1 md:col-span-2'>
                         <div className='space-y-2'>
                           <div className='flex items-center gap-2'>
-                            {booking.paymentMethod === "Paystack" ? <CreditCard className='w-4 h-4 text-gray-300'/> : <HandCoins className='w-4 h-4 text-gray-300'/>}
+                            {booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment" ? 
+                              <CreditCard className='w-4 h-4 text-gray-300'/> : 
+                              <HandCoins className='w-4 h-4 text-gray-300'/>
+                            }
                             <span className='text-sm text-gray-400'>
-                              {booking.paymentMethod}
+                              {booking.paymentMethod === "Mock Payment" ? "Pay Online" : booking.paymentMethod}
                             </span>
                           </div>
                           <p className='font-bold text-lg text-gray-200'>
@@ -364,6 +322,14 @@ const handlePayment = async(bookingId) => {
                                 : <span className='bg-green-200 text-green-700 rounded-full px-2 py-1'>Paid</span>
                             )}
                           </div>
+                          {!booking.isPaid && booking.status !== "cancelled" && (booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment") && (
+                            <button
+                              onClick={() => handlePayment(booking._id)}
+                              className='w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors'
+                            >
+                              Pay Now
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -489,9 +455,12 @@ const handlePayment = async(bookingId) => {
                       <div className='col-span-1 md:col-span-2'>
                         <div className='space-y-2'>
                           <div className='flex items-center gap-2'>
-                            {booking.paymentMethod === "Paystack" ? <CreditCard className='w-4 h-4 text-gray-300'/> : <HandCoins className='w-4 h-4 text-gray-300'/>}
+                            {booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment" ? 
+                              <CreditCard className='w-4 h-4 text-gray-300'/> : 
+                              <HandCoins className='w-4 h-4 text-gray-300'/>
+                            }
                             <span className='text-sm text-gray-400'>
-                              {booking.paymentMethod}
+                              {booking.paymentMethod === "Mock Payment" ? "Pay Online" : booking.paymentMethod}
                             </span>
                           </div>
                           <p className='font-bold text-lg text-gray-200'>
@@ -508,6 +477,14 @@ const handlePayment = async(bookingId) => {
                                 : <span className='bg-green-200 text-green-700 rounded-full px-2 py-1'>Paid</span>
                             )}
                           </div>
+                          {!booking.isPaid && booking.status !== "cancelled" && (booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment") && (
+                            <button
+                              onClick={() => handlePayment(booking._id)}
+                              className='w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors mt-2'
+                            >
+                              Pay Now
+                            </button>
+                          )}
                         </div>
                       </div>
 

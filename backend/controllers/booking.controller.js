@@ -43,8 +43,6 @@ const awardLoyaltyPoint = async (bookingId) => {
     }
 };
 
-
-
 const isRoomDiscountActive = (room) => {
     if (!room?.hasDiscount) return false;
     
@@ -61,7 +59,6 @@ const isRoomDiscountActive = (room) => {
 const getCurrentRoomPrice = (room) => {
     return isRoomDiscountActive(room) ? room.discountedPrice : room.pricePerNight;
 };
-
 
 // Function to check room availability
 export const checkAvailability = async ({ room, checkInDate, checkOutDate }) => {
@@ -100,7 +97,6 @@ export const checkRoomAvailability = async (req, res) => {
 
 // Api to book a room
 // POST /api/bookings/book
-// Modified bookRoom function to return booking ID
 export const bookRoom = async (req, res) => {
     try {
         const { id } = req.user
@@ -181,7 +177,7 @@ export const bookRoom = async (req, res) => {
             persons,
             totalPrice,
             originalPrice,
-            paymentMethod,
+            paymentMethod: paymentMethod === "Pay Online" ? "Mock Payment" : paymentMethod,
             loyaltyPointsUsed: useLoyaltyDiscount ? loyaltyPointsUsed : 0,
             discountApplied: useLoyaltyDiscount ? discountPercentage : 0
         })
@@ -281,7 +277,8 @@ export const getHotelBookings = async (req, res) => {
     }
 }
 
-const mockPaystackPayment = async (req, res) => {
+// Mock Payment API - replaces Paystack payment
+export const mockPayment = async (req, res) => {
     try {
         const { bookingId } = req.body
         const booking = await Booking.findById(bookingId).populate('user')
@@ -292,7 +289,6 @@ const mockPaystackPayment = async (req, res) => {
 
         const roomData = await Room.findById(booking.room).populate("hotel")
         const totalPrice = booking.totalPrice
-        const { origin } = req.headers
 
         // Generate a mock reference
         const mockReference = `mock_${bookingId}_${Date.now()}`
@@ -303,15 +299,11 @@ const mockPaystackPayment = async (req, res) => {
             paymentMethod: "Mock Payment" 
         })
 
-        // Simulate Paystack response format
         res.status(200).json({ 
-            message: "Mock payment initialized successfully", 
+            message: "Payment initialized successfully", 
             success: true, 
-            url: `${origin}/mock-payment?reference=${mockReference}&amount=${totalPrice}`,
-            email: booking.user.email,
-            amount: Math.round(totalPrice * 100),
             reference: mockReference,
-            isMockPayment: true // Flag to identify mock payments
+            amount: totalPrice
         })
 
     } catch (error) {
@@ -320,7 +312,8 @@ const mockPaystackPayment = async (req, res) => {
     }
 }
 
-const mockVerifyPaystackPayment = async (req, res) => {
+// Mock Payment Verification - replaces Paystack verification
+export const verifyMockPayment = async (req, res) => {
     try {
         const { reference } = req.body
         
@@ -337,7 +330,7 @@ const mockVerifyPaystackPayment = async (req, res) => {
         const bookingIdMatch = reference.match(/mock_([a-f\d]{24})_\d+/)
         if (!bookingIdMatch) {
             return res.status(400).json({ 
-                message: "Invalid mock payment reference", 
+                message: "Invalid payment reference", 
                 success: false 
             })
         }
@@ -356,7 +349,7 @@ const mockVerifyPaystackPayment = async (req, res) => {
         )
 
         if (booking) {
-            console.log(`📋 Mock payment verified for booking: ${bookingId}`);
+            console.log(`📋 Payment verified for booking: ${bookingId}`);
             
             // Award loyalty point for confirmed booking
             const loyaltyAwarded = await awardLoyaltyPoint(bookingId);
@@ -368,233 +361,16 @@ const mockVerifyPaystackPayment = async (req, res) => {
         }
 
         res.status(200).json({ 
-            message: "Mock payment verified successfully", 
+            message: "Payment verified successfully", 
             success: true 
         })
         
-    } catch (error) {
-        console.log("💥 Mock payment verification error:", error)
-        res.status(500).json({ 
-            message: "Internal Server Error", 
-            success: false 
-        })
-    }
-}
-
-// 3. Update the main payment functions to use mock when enabled
-
-export const paystackPayment = async (req, res) => {
-    // Check if mock payment is enabled
-    if (process.env.ENABLE_MOCK_PAYMENT === 'true') {
-        console.log("🎭 Using mock payment mode");
-        return mockPaystackPayment(req, res);
-    }
-    
-    // Original Paystack implementation
-    try {
-        const { bookingId } = req.body
-        const booking = await Booking.findById(bookingId).populate('user')
-        
-        if (!booking) {
-            return res.status(404).json({ message: "Booking not found", success: false })
-        }
-
-        const roomData = await Room.findById(booking.room).populate("hotel")
-        const totalPrice = booking.totalPrice
-        const { origin } = req.headers
-
-        const paystackData = {
-            email: booking.user.email,
-            amount: Math.round(totalPrice * 100),
-            currency: 'NGN',
-            reference: `booking_${bookingId}_${Date.now()}`,
-            callback_url: `${origin}/loader/my-bookings`,
-            metadata: {
-                bookingId: bookingId,
-                hotelName: roomData.hotel.hotelName,
-                roomType: roomData.roomType,
-                checkIn: booking.checkIn,
-                checkOut: booking.checkOut,
-                persons: booking.persons
-            }
-        }
-
-        const response = await fetch('https://api.paystack.co/transaction/initialize', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(paystackData)
-        })
-
-        const result = await response.json()
-
-        if (result.status) {
-            await booking.updateOne({ 
-                paymentReference: result.data.reference,
-                paymentMethod: "Paystack" 
-            })
-            
-            res.status(200).json({ 
-                message: "Payment initialized successfully", 
-                success: true, 
-                url: result.data.authorization_url,
-                email: booking.user.email,
-                amount: Math.round(totalPrice * 100),
-                reference: result.data.reference
-            })
-        } else {
-            res.status(400).json({ 
-                message: result.message || "Failed to initialize payment", 
-                success: false 
-            })
-        }
-
-    } catch (error) {
-        console.log("Paystack payment error:", error)
-        // Fallback to mock payment if Paystack fails
-        console.log("🎭 Falling back to mock payment due to Paystack error");
-        return mockPaystackPayment(req, res);
-    }
-}
-
-export const verifyPaystackPayment = async (req, res) => {
-    const { reference } = req.body
-    
-    // Check if this is a mock payment reference
-    if (reference && reference.startsWith('mock_')) {
-        console.log("🎭 Processing mock payment verification");
-        return mockVerifyPaystackPayment(req, res);
-    }
-    
-    // Check if mock payment is enabled for all payments
-    if (process.env.ENABLE_MOCK_PAYMENT === 'true') {
-        console.log("🎭 Using mock payment verification mode");
-        return mockVerifyPaystackPayment(req, res);
-    }
-    
-    // Original Paystack verification implementation
-    try {
-        if (!reference) {
-            return res.status(400).json({ 
-                message: "Payment reference is required", 
-                success: false 
-            })
-        }
-        
-        console.log(`🔍 Verifying Paystack payment: ${reference}`);
-        
-        const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        })
-
-        const result = await response.json()
-
-        if (result.status && result.data.status === 'success') {
-            const { metadata } = result.data
-            const { bookingId } = metadata
-
-            if (bookingId) {
-                console.log(`💳 Payment verified successfully for booking: ${bookingId}`);
-                
-                const booking = await Booking.findByIdAndUpdate(
-                    bookingId,
-                    {
-                        isPaid: true,
-                        status: "confirmed",
-                        paymentReference: reference
-                    },
-                    { new: true }
-                )
-
-                if (booking) {
-                    console.log(`📋 Booking updated: ${bookingId} -> status: confirmed, isPaid: true`);
-                    
-                    const loyaltyAwarded = await awardLoyaltyPoint(bookingId);
-                    if (!loyaltyAwarded) {
-                        console.log(`⚠️ Failed to award loyalty point for booking: ${bookingId}`);
-                    }
-                } else {
-                    console.log(`❌ Failed to update booking: ${bookingId}`);
-                }
-
-                res.status(200).json({ 
-                    message: "Payment verified successfully", 
-                    success: true 
-                })
-            } else {
-                res.status(400).json({ 
-                    message: "Booking ID not found in payment metadata", 
-                    success: false 
-                })
-            }
-        } else {
-            console.log(`❌ Payment verification failed:`, result.message);
-            res.status(400).json({ 
-                message: result.message || "Payment verification failed", 
-                success: false 
-            })
-        }
     } catch (error) {
         console.log("💥 Payment verification error:", error)
         res.status(500).json({ 
             message: "Internal Server Error", 
             success: false 
         })
-    }
-}
-
-
-// Function to process Paystack refund
-const processPaystackRefund = async (booking, refundAmount) => {
-    try {
-        if (!booking.paymentReference) {
-            throw new Error("No payment reference found for refund")
-        }
-
-        const refundData = {
-            transaction: booking.paymentReference,
-            amount: Math.round(refundAmount * 100), // Convert to kobo
-            currency: 'NGN',
-            customer_note: `Refund for booking cancellation - Booking ID: ${booking._id}`,
-            merchant_note: `Refund processed for cancelled booking`
-        }
-
-        const response = await fetch('https://api.paystack.co/refund', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(refundData)
-        })
-
-        const result = await response.json()
-        
-        if (result.status) {
-            return {
-                success: true,
-                refundReference: result.data.transaction.reference,
-                refundId: result.data.id,
-                message: "Refund initiated successfully"
-            }
-        } else {
-            return {
-                success: false,
-                message: result.message || "Failed to process refund"
-            }
-        }
-    } catch (error) {
-        console.log("Paystack refund error:", error)
-        return {
-            success: false,
-            message: "Failed to process refund: " + error.message
-        }
     }
 }
 
@@ -606,7 +382,7 @@ export const updateBookingStatus = async (req, res) => {
         const { status, isPaid } = req.body
         const { id } = req.user
 
-        console.log(`🔄 Updating booking ${bookingId}: status=${status}, isPaid=${isPaid}`);
+        console.log(`📄 Updating booking ${bookingId}: status=${status}, isPaid=${isPaid}`);
 
         // Verify the booking belongs to owner's hotel
         const booking = await Booking.findById(bookingId).populate('hotel user room')
@@ -656,8 +432,8 @@ export const updateBookingStatus = async (req, res) => {
                 console.log(`🔄 Refunded ${booking.loyaltyPointsUsed} loyalty points to user`);
             }
             
-            // Process refund logic (existing code remains the same)
-            if (booking.isPaid && booking.paymentMethod === "Paystack") {
+            // For mock payments, we'll simulate a refund process
+            if (booking.isPaid) {
                 const now = new Date()
                 const checkInDate = new Date(booking.checkIn)
                 const timeDifference = checkInDate.getTime() - now.getTime()
@@ -672,27 +448,14 @@ export const updateBookingStatus = async (req, res) => {
                     refundAmount = booking.totalPrice * 0.3
                 }
 
-                const refundResult = await processPaystackRefund(booking, refundAmount)
-                
-                if (refundResult.success) {
-                    updateData.refundInitiated = true
-                    updateData.refundAmount = refundAmount
-                    updateData.refundReference = refundResult.refundReference
-                    updateData.refundDate = new Date()
-                    updateData.refundStatus = "initiated"
-                } else {
-                    console.log("Refund failed:", refundResult.message)
-                    updateData.refundFailed = true
-                    updateData.refundFailReason = refundResult.message
-                }
-            } else if (booking.isPaid && booking.paymentMethod === "Pay At Hotel") {
                 updateData.refundInitiated = true
-                updateData.refundAmount = booking.totalPrice
+                updateData.refundAmount = refundAmount
                 updateData.refundDate = new Date()
-                updateData.refundStatus = "manual_required"
+                updateData.refundStatus = "completed" // For mock payments, mark as completed
+                updateData.refundReference = `refund_${bookingId}_${Date.now()}`
             }
             
-            // Send cancellation email (existing code)
+            // Send cancellation email
             const mailOptions = {
                 from: process.env.SENDER_EMAIL,
                 to: booking.user.email,
@@ -712,7 +475,7 @@ export const updateBookingStatus = async (req, res) => {
                         }
                         ${updateData.refundInitiated ? 
                             `<li>Refund Amount: ₦${updateData.refundAmount?.toLocaleString('en-NG')}</li>
-                             <li>Refund will be processed within ${booking.paymentMethod === 'Paystack' ? '7-14' : '5-7'} business days</li>` : ''
+                             <li>Refund will be processed within 3-5 business days</li>` : ''
                         }
                     </ul>
                     <p>We apologize for any inconvenience caused.</p>
@@ -745,7 +508,6 @@ export const updateBookingStatus = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" })
     }
 }
-
 
 // Api to confirm guest check-in
 // PUT /api/bookings/check-in/:bookingId
@@ -976,35 +738,20 @@ export const cancelUserBooking = async (req, res) => {
 
         // Handle refund logic if booking was paid
         if (booking.isPaid) {
-            if (booking.paymentMethod === "Paystack") {
-                // Calculate refund amount based on cancellation time
-                let refundAmount = 0
-                if (hoursDifference > 48) {
-                    refundAmount = booking.totalPrice // Full refund
-                } else {
-                    refundAmount = booking.totalPrice * 0.8 // 80% refund for user cancellation within 48 hours
-                }
-
-                // Process Paystack refund
-                const refundResult = await processPaystackRefund(booking, refundAmount)
-                
-                if (refundResult.success) {
-                    updateData.refundInitiated = true
-                    updateData.refundAmount = refundAmount
-                    updateData.refundReference = refundResult.refundReference
-                    updateData.refundDate = new Date()
-                    updateData.refundStatus = "initiated"
-                } else {
-                    updateData.refundFailed = true
-                    updateData.refundFailReason = refundResult.message
-                }
+            // Calculate refund amount based on cancellation time
+            let refundAmount = 0
+            if (hoursDifference > 48) {
+                refundAmount = booking.totalPrice // Full refund
             } else {
-                // For pay at hotel, mark for manual refund
-                updateData.refundInitiated = true
-                updateData.refundAmount = booking.totalPrice * 0.9 // 90% refund for pay at hotel
-                updateData.refundDate = new Date()
-                updateData.refundStatus = "manual_required"
+                refundAmount = booking.totalPrice * 0.8 // 80% refund for user cancellation within 48 hours
             }
+
+            // For mock payments, mark refund as completed immediately
+            updateData.refundInitiated = true
+            updateData.refundAmount = refundAmount
+            updateData.refundDate = new Date()
+            updateData.refundStatus = "completed"
+            updateData.refundReference = `refund_${bookingId}_${Date.now()}`
         }
 
         const updatedBooking = await Booking.findByIdAndUpdate(
@@ -1031,7 +778,7 @@ export const cancelUserBooking = async (req, res) => {
                     <li>Cancellation Date: ${new Date().toLocaleDateString()}</li>
                     ${updateData.refundInitiated ? 
                         `<li>Refund Amount: ₦${updateData.refundAmount?.toLocaleString('en-NG')}</li>
-                         <li>Refund will be processed within ${booking.paymentMethod === 'Paystack' ? '7-14' : '5-7'} business days</li>` : ''
+                         <li>Refund will be processed within 3-5 business days</li>` : ''
                     }
                 </ul>
                 <p>The dates are now available for other guests to book.</p>
