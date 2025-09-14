@@ -264,8 +264,6 @@ const SingularRoom = () => {
   } catch (error) {
     console.error("💥 Mock payment error:", error);
     toast.error(error.response?.data?.message || error.message || "Payment failed");
-  } finally {
-    setLoading(false);
   }
 }
 
@@ -295,9 +293,6 @@ const onSubmitHandler = async (e) => {
         return
       }
 
-      console.log("📝 Creating booking...");
-      setLoading(true)
-
       const bookingPayload = {
         room: room._id,
         checkInDate: bookingData.checkIn,
@@ -324,22 +319,18 @@ const onSubmitHandler = async (e) => {
           await handleMockPayment(data.bookingId)
         } else {
           console.log("🏨 Pay at hotel booking completed");
-          // For "Pay At Hotel"
-          setLoading(false)
           navigate("/my-bookings")
           scrollTo(0, 0)
         }
       } else {
         console.error("❌ Booking failed:", data.message);
         toast.error(data.message)
-        setLoading(false)
       }
     }
   } catch (error) {
     console.error("💥 Booking error:", error);
     console.error("Error details:", error.response?.data);
     toast.error(error.response?.data?.message || error.message || "Booking failed")
-    setLoading(false)
   }
 }
 

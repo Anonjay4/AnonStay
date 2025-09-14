@@ -480,7 +480,7 @@ const handlePayment = async(bookingId) => {
                           {!booking.isPaid && booking.status !== "cancelled" && (booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment") && (
                             <button
                               onClick={() => handlePayment(booking._id)}
-                              className='w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors mt-2'
+                              className='w-full px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors mt-2'
                             >
                               Pay Now
                             </button>
