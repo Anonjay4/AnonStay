@@ -151,7 +151,6 @@ const Signup = () => {
           >
             <option className='bg-gray-700 text-gray-200' value="">Select your role</option>
             <option className='bg-gray-700 text-gray-200' value="user">User</option>
-            <option className='bg-gray-700 text-gray-200' value="owner">Owner</option>
           </select>                 
         </div>
 

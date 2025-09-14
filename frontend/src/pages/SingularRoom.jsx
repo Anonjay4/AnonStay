@@ -231,100 +231,121 @@ const SingularRoom = () => {
     return phone;
   };
 
-  const onSubmitHandler = async (e) => {
-    e.preventDefault()
-    
-    if (!user) {
-      toast.error("Please login to make a booking")
-      navigate("/login")
-      return
-    }
-
-    try {
-      if (!isAvailable) {
-        return checkRoomAvailability()
-      } else {
-        if (useLoyaltyDiscount && loyaltyPointsToUse < 5) {
-          toast.error("Minimum 5 loyalty points required for discount")
-          return
-        }
-
-        if (useLoyaltyDiscount && loyaltyPointsToUse > userLoyaltyPoints) {
-          toast.error("Insufficient loyalty points")
-          return
-        }
-
-        setLoading(true)
-
-        const bookingPayload = {
-          room: room._id,
-          checkInDate: bookingData.checkIn,
-          checkOutDate: bookingData.checkOut,
-          persons: bookingData.persons,
-          paymentMethod: bookingData.paymentMethod,
-          useLoyaltyDiscount,
-          loyaltyPointsUsed: useLoyaltyDiscount ? loyaltyPointsToUse : 0,
-          discountPercentage: useLoyaltyDiscount ? loyaltyDiscountPercentage : 0
-        }
-
-        const { data } = await axios.post("/api/bookings/book", bookingPayload)
-        
-        if (data.success) {
-          toast.success(data.message)
-          
-          if (bookingData.paymentMethod === "Paystack") {
-  try {
-    const bookingsResponse = await axios.get("/api/bookings/user")
-    if (bookingsResponse.data.success && bookingsResponse.data.bookings.length > 0) {
-      const latestBooking = bookingsResponse.data.bookings[0]
-      
-      const paymentResponse = await axios.post("/api/bookings/paystack-payment", {
-        bookingId: latestBooking._id
-      })
-      
-      if (paymentResponse.data.success) {
-        // Use Paystack popup instead of redirect
-        const handler = PaystackPop.setup({
-          key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728',
-          email: paymentResponse.data.email,
-          amount: paymentResponse.data.amount,
-          reference: paymentResponse.data.reference,
-          callback: function(response) {
-            // Payment successful - verify the payment
-            toast.success('Payment successful! Verifying...')
-            // You can call your verify endpoint here if needed
-            navigate("/my-bookings")
-            scrollTo(0, 0)
-          },
-          onClose: function() {
-            toast.info('Payment window closed')
-          }
-        })
-        handler.openIframe()
-        return
-      } else {
-        toast.error("Failed to initialize payment")
-      }
-    }
-  } catch (paymentError) {
-    console.error("Payment initialization error:", paymentError)
-    toast.error("Payment initialization failed. Please try again.")
+const onSubmitHandler = async (e) => {
+  e.preventDefault()
+  
+  if (!user) {
+    toast.error("Please login to make a booking")
+    navigate("/login")
+    return
   }
-          } else {
-            // For "Pay At Hotel" - this should work fine
-            navigate("/my-bookings")
-            scrollTo(0, 0)
+
+  try {
+    if (!isAvailable) {
+      return checkRoomAvailability()
+    } else {
+      if (useLoyaltyDiscount && loyaltyPointsToUse < 5) {
+        toast.error("Minimum 5 loyalty points required for discount")
+        return
+      }
+
+      if (useLoyaltyDiscount && loyaltyPointsToUse > userLoyaltyPoints) {
+        toast.error("Insufficient loyalty points")
+        return
+      }
+
+      setLoading(true)
+
+      const bookingPayload = {
+        room: room._id,
+        checkInDate: bookingData.checkIn,
+        checkOutDate: bookingData.checkOut,
+        persons: bookingData.persons,
+        paymentMethod: bookingData.paymentMethod,
+        useLoyaltyDiscount,
+        loyaltyPointsUsed: useLoyaltyDiscount ? loyaltyPointsToUse : 0,
+        discountPercentage: useLoyaltyDiscount ? loyaltyDiscountPercentage : 0
+      }
+
+      const { data } = await axios.post("/api/bookings/book", bookingPayload)
+      
+      if (data.success) {
+        toast.success(data.message)
+        
+        if (bookingData.paymentMethod === "Paystack") {
+          try {
+            // Get the booking ID from the response
+            const bookingId = data.bookingId
+            
+            // Initialize payment
+            const paymentResponse = await axios.post("/api/bookings/paystack-payment", {
+              bookingId: bookingId
+            })
+            
+            if (paymentResponse.data.success) {
+              // Check if PaystackPop is available (loaded from CDN)
+              if (typeof PaystackPop !== 'undefined') {
+                // Use Paystack Popup
+                const handler = PaystackPop.setup({
+                  key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728', // Your public key
+                  email: user.email, // Get from user context
+                  amount: Math.round(finalPrice * 100), // Convert to kobo
+                  currency: 'NGN',
+                  ref: `booking_${bookingId}_${Date.now()}`,
+                  callback: function(response) {
+                    // Payment successful
+                    toast.success('Payment successful! Verifying...')
+                    
+                    // Verify payment
+                    axios.post("/api/bookings/verify-payment", {
+                      reference: response.reference
+                    }).then((verifyResponse) => {
+                      if (verifyResponse.data.success) {
+                        toast.success("Payment verified successfully!")
+                        navigate("/my-bookings")
+                        scrollTo(0, 0)
+                      } else {
+                        toast.error("Payment verification failed")
+                      }
+                    }).catch((verifyError) => {
+                      toast.error("Payment verification error")
+                      console.error(verifyError)
+                    })
+                  },
+                  onClose: function() {
+                    toast.info('Payment cancelled')
+                    setLoading(false)
+                  }
+                })
+                handler.openIframe()
+              } else {
+                // Fallback to redirect if popup not available
+                window.location.href = paymentResponse.data.url
+              }
+            } else {
+              toast.error("Failed to initialize payment")
+              setLoading(false)
+            }
+          } catch (paymentError) {
+            console.error("Payment initialization error:", paymentError)
+            toast.error("Payment initialization failed. Please try again.")
+            setLoading(false)
           }
         } else {
-          toast.error(data.message)
+          // For "Pay At Hotel"
+          navigate("/my-bookings")
+          scrollTo(0, 0)
         }
+      } else {
+        toast.error(data.message)
+        setLoading(false)
       }
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message)
-    } finally {
-      setLoading(false)
     }
+  } catch (error) {
+    toast.error(error.response?.data?.message || error.message)
+    setLoading(false)
   }
+}
 
   const maxLoyaltyPoints = Math.min(userLoyaltyPoints, 50)
   const canUseLoyalty = userLoyaltyPoints >= 5

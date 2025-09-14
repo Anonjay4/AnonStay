@@ -26,18 +26,54 @@ const MyBookings = () => {
     }
   }
 
-  const handlePayment = async(bookingId) => {
-    try {
-      const { data } = await axios.post("/api/bookings/paystack-payment", { bookingId })
-      if (data.success) {
-        window.location.href = data.url
+const handlePayment = async(bookingId) => {
+  try {
+    const { data } = await axios.post("/api/bookings/paystack-payment", { bookingId })
+    if (data.success) {
+      // Check if PaystackPop is available
+      if (typeof PaystackPop !== 'undefined') {
+        // Use Paystack Popup
+        const handler = PaystackPop.setup({
+          key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728',
+          email: data.email,
+          amount: data.amount,
+          currency: 'NGN',
+          ref: data.reference,
+          callback: function(response) {
+            toast.success('Payment successful! Verifying...')
+            
+            // Verify payment
+            axios.post("/api/bookings/verify-payment", {
+              reference: response.reference
+            }).then((verifyResponse) => {
+              if (verifyResponse.data.success) {
+                toast.success("Payment verified successfully!")
+                // Refresh bookings
+                fetchMyBookings()
+              } else {
+                toast.error("Payment verification failed")
+              }
+            }).catch((verifyError) => {
+              toast.error("Payment verification error")
+              console.error(verifyError)
+            })
+          },
+          onClose: function() {
+            toast.info('Payment cancelled')
+          }
+        })
+        handler.openIframe()
       } else {
-        toast.error(data.message)
+        // Fallback to redirect
+        window.location.href = data.url
       }
-    } catch (error) {
-      toast.error(error.message)
+    } else {
+      toast.error(data.message)
     }
+  } catch (error) {
+    toast.error(error.message)
   }
+}
 
   const handleCancelBooking = async () => {
     if (!selectedBookingId) return

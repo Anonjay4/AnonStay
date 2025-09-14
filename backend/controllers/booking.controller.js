@@ -297,9 +297,9 @@ export const paystackPayment = async (req, res) => {
         // Paystack transaction initialization
         const paystackData = {
             email: booking.user.email,
-            amount: Math.round(totalPrice * 100), // Paystack expects amount in kobo (multiply by 100)
+            amount: Math.round(totalPrice * 100), // Paystack expects amount in kobo
             currency: 'NGN',
-            reference: `booking_${bookingId}_${Date.now()}`, // Unique reference
+            reference: `booking_${bookingId}_${Date.now()}`,
             callback_url: `${origin}/loader/my-bookings`,
             metadata: {
                 bookingId: bookingId,
@@ -333,7 +333,10 @@ export const paystackPayment = async (req, res) => {
             res.status(200).json({ 
                 message: "Payment initialized successfully", 
                 success: true, 
-                url: result.data.authorization_url 
+                url: result.data.authorization_url,
+                email: booking.user.email,          // Add this
+                amount: Math.round(totalPrice * 100), // Add this
+                reference: result.data.reference      // Add this
             })
         } else {
             res.status(400).json({ 
