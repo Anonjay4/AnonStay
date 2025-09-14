@@ -230,25 +230,49 @@ const SingularRoom = () => {
     return phone;
   };
 
-  const handleMockPayment = async(bookingId) => {
+ const handleMockPayment = async(bookingId) => {
+  try {
+    console.log("🎭 Starting mock payment for booking:", bookingId);
+    
+    // Try the new route first, fallback to old route if needed
+    let endpoint = "/api/bookings/mock-payment";
+    let data;
+    
     try {
-      const { data } = await axios.post("/api/bookings/mock-payment", { bookingId })
-      if (data.success) {
-        toast.success('Redirecting to payment processor...');
-        navigate(`/mock-payment?reference=${data.reference}&amount=${finalPrice}`);
-        setLoading(false)
-      } else {
-        toast.error(data.message)
-        setLoading(false)
-      }
+      const response = await axios.post(endpoint, { bookingId });
+      data = response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message)
-      setLoading(false)
+      if (error.response?.status === 404) {
+        // Fallback to old paystack route which might have mock enabled
+        console.log("📍 Falling back to paystack-payment route");
+        endpoint = "/api/bookings/paystack-payment";
+        const response = await axios.post(endpoint, { bookingId });
+        data = response.data;
+      } else {
+        throw error;
+      }
     }
+    
+    if (data.success) {
+      console.log("✅ Mock payment initialized:", data);
+      toast.success('Redirecting to payment processor...');
+      navigate(`/mock-payment?reference=${data.reference}&amount=${finalPrice}`);
+    } else {
+      console.error("❌ Mock payment failed:", data.message);
+      toast.error(data.message || "Payment initialization failed");
+    }
+  } catch (error) {
+    console.error("💥 Mock payment error:", error);
+    toast.error(error.response?.data?.message || error.message || "Payment failed");
+  } finally {
+    setLoading(false);
   }
+}
 
 const onSubmitHandler = async (e) => {
   e.preventDefault()
+  
+  console.log("🚀 Form submitted with data:", bookingData);
   
   if (!user) {
     toast.error("Please login to make a booking")
@@ -258,6 +282,7 @@ const onSubmitHandler = async (e) => {
 
   try {
     if (!isAvailable) {
+      console.log("🔍 Checking room availability...");
       return checkRoomAvailability()
     } else {
       if (useLoyaltyDiscount && loyaltyPointsToUse < 5) {
@@ -270,6 +295,7 @@ const onSubmitHandler = async (e) => {
         return
       }
 
+      console.log("📝 Creating booking...");
       setLoading(true)
 
       const bookingPayload = {
@@ -283,27 +309,36 @@ const onSubmitHandler = async (e) => {
         discountPercentage: useLoyaltyDiscount ? loyaltyDiscountPercentage : 0
       }
 
+      console.log("📦 Booking payload:", bookingPayload);
+
       const { data } = await axios.post("/api/bookings/book", bookingPayload)
+      
+      console.log("📋 Booking response:", data);
       
       if (data.success) {
         toast.success(data.message)
         
         if (bookingData.paymentMethod === "Pay Online") {
-          // Use mock payment for all online payments
+          console.log("💳 Processing online payment for booking:", data.bookingId);
+          // Don't reset loading here - let handleMockPayment handle it
           await handleMockPayment(data.bookingId)
         } else {
+          console.log("🏨 Pay at hotel booking completed");
           // For "Pay At Hotel"
+          setLoading(false)
           navigate("/my-bookings")
           scrollTo(0, 0)
-          setLoading(false)
         }
       } else {
+        console.error("❌ Booking failed:", data.message);
         toast.error(data.message)
         setLoading(false)
       }
     }
   } catch (error) {
-    toast.error(error.response?.data?.message || error.message)
+    console.error("💥 Booking error:", error);
+    console.error("Error details:", error.response?.data);
+    toast.error(error.response?.data?.message || error.message || "Booking failed")
     setLoading(false)
   }
 }
