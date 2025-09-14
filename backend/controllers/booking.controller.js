@@ -281,7 +281,7 @@ export const getHotelBookings = async (req, res) => {
     }
 }
 
-export const paystackPayment = async (req, res) => {
+const mockPaystackPayment = async (req, res) => {
     try {
         const { bookingId } = req.body
         const booking = await Booking.findById(bookingId).populate('user')
@@ -294,10 +294,118 @@ export const paystackPayment = async (req, res) => {
         const totalPrice = booking.totalPrice
         const { origin } = req.headers
 
-        // Paystack transaction initialization
+        // Generate a mock reference
+        const mockReference = `mock_${bookingId}_${Date.now()}`
+
+        // Store the mock reference
+        await booking.updateOne({ 
+            paymentReference: mockReference,
+            paymentMethod: "Mock Payment" 
+        })
+
+        // Simulate Paystack response format
+        res.status(200).json({ 
+            message: "Mock payment initialized successfully", 
+            success: true, 
+            url: `${origin}/mock-payment?reference=${mockReference}&amount=${totalPrice}`,
+            email: booking.user.email,
+            amount: Math.round(totalPrice * 100),
+            reference: mockReference,
+            isMockPayment: true // Flag to identify mock payments
+        })
+
+    } catch (error) {
+        console.log("Mock payment error:", error)
+        res.status(500).json({ message: "Internal Server Error", success: false })
+    }
+}
+
+const mockVerifyPaystackPayment = async (req, res) => {
+    try {
+        const { reference } = req.body
+        
+        if (!reference) {
+            return res.status(400).json({ 
+                message: "Payment reference is required", 
+                success: false 
+            })
+        }
+        
+        console.log(`🔍 Mock verifying payment: ${reference}`);
+        
+        // Extract booking ID from mock reference
+        const bookingIdMatch = reference.match(/mock_([a-f\d]{24})_\d+/)
+        if (!bookingIdMatch) {
+            return res.status(400).json({ 
+                message: "Invalid mock payment reference", 
+                success: false 
+            })
+        }
+        
+        const bookingId = bookingIdMatch[1]
+        
+        // Find and update booking
+        const booking = await Booking.findByIdAndUpdate(
+            bookingId,
+            {
+                isPaid: true,
+                status: "confirmed",
+                paymentReference: reference
+            },
+            { new: true }
+        )
+
+        if (booking) {
+            console.log(`📋 Mock payment verified for booking: ${bookingId}`);
+            
+            // Award loyalty point for confirmed booking
+            const loyaltyAwarded = await awardLoyaltyPoint(bookingId);
+            if (!loyaltyAwarded) {
+                console.log(`⚠️ Failed to award loyalty point for booking: ${bookingId}`);
+            }
+        } else {
+            console.log(`❌ Failed to update booking: ${bookingId}`);
+        }
+
+        res.status(200).json({ 
+            message: "Mock payment verified successfully", 
+            success: true 
+        })
+        
+    } catch (error) {
+        console.log("💥 Mock payment verification error:", error)
+        res.status(500).json({ 
+            message: "Internal Server Error", 
+            success: false 
+        })
+    }
+}
+
+// 3. Update the main payment functions to use mock when enabled
+
+export const paystackPayment = async (req, res) => {
+    // Check if mock payment is enabled
+    if (process.env.ENABLE_MOCK_PAYMENT === 'true') {
+        console.log("🎭 Using mock payment mode");
+        return mockPaystackPayment(req, res);
+    }
+    
+    // Original Paystack implementation
+    try {
+        const { bookingId } = req.body
+        const booking = await Booking.findById(bookingId).populate('user')
+        
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found", success: false })
+        }
+
+        const roomData = await Room.findById(booking.room).populate("hotel")
+        const totalPrice = booking.totalPrice
+        const { origin } = req.headers
+
         const paystackData = {
             email: booking.user.email,
-            amount: Math.round(totalPrice * 100), // Paystack expects amount in kobo
+            amount: Math.round(totalPrice * 100),
             currency: 'NGN',
             reference: `booking_${bookingId}_${Date.now()}`,
             callback_url: `${origin}/loader/my-bookings`,
@@ -311,7 +419,6 @@ export const paystackPayment = async (req, res) => {
             }
         }
 
-        // Make request to Paystack API
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
             method: 'POST',
             headers: {
@@ -324,7 +431,6 @@ export const paystackPayment = async (req, res) => {
         const result = await response.json()
 
         if (result.status) {
-            // Store the reference for webhook verification
             await booking.updateOne({ 
                 paymentReference: result.data.reference,
                 paymentMethod: "Paystack" 
@@ -334,9 +440,9 @@ export const paystackPayment = async (req, res) => {
                 message: "Payment initialized successfully", 
                 success: true, 
                 url: result.data.authorization_url,
-                email: booking.user.email,          // Add this
-                amount: Math.round(totalPrice * 100), // Add this
-                reference: result.data.reference      // Add this
+                email: booking.user.email,
+                amount: Math.round(totalPrice * 100),
+                reference: result.data.reference
             })
         } else {
             res.status(400).json({ 
@@ -347,14 +453,29 @@ export const paystackPayment = async (req, res) => {
 
     } catch (error) {
         console.log("Paystack payment error:", error)
-        res.status(500).json({ message: "Internal Server Error", success: false })
+        // Fallback to mock payment if Paystack fails
+        console.log("🎭 Falling back to mock payment due to Paystack error");
+        return mockPaystackPayment(req, res);
     }
 }
 
 export const verifyPaystackPayment = async (req, res) => {
+    const { reference } = req.body
+    
+    // Check if this is a mock payment reference
+    if (reference && reference.startsWith('mock_')) {
+        console.log("🎭 Processing mock payment verification");
+        return mockVerifyPaystackPayment(req, res);
+    }
+    
+    // Check if mock payment is enabled for all payments
+    if (process.env.ENABLE_MOCK_PAYMENT === 'true') {
+        console.log("🎭 Using mock payment verification mode");
+        return mockVerifyPaystackPayment(req, res);
+    }
+    
+    // Original Paystack verification implementation
     try {
-        const { reference } = req.body
-        
         if (!reference) {
             return res.status(400).json({ 
                 message: "Payment reference is required", 
@@ -381,7 +502,6 @@ export const verifyPaystackPayment = async (req, res) => {
             if (bookingId) {
                 console.log(`💳 Payment verified successfully for booking: ${bookingId}`);
                 
-                // Update booking status first
                 const booking = await Booking.findByIdAndUpdate(
                     bookingId,
                     {
@@ -395,7 +515,6 @@ export const verifyPaystackPayment = async (req, res) => {
                 if (booking) {
                     console.log(`📋 Booking updated: ${bookingId} -> status: confirmed, isPaid: true`);
                     
-                    // Award loyalty point for confirmed booking
                     const loyaltyAwarded = await awardLoyaltyPoint(bookingId);
                     if (!loyaltyAwarded) {
                         console.log(`⚠️ Failed to award loyalty point for booking: ${bookingId}`);

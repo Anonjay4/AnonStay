@@ -30,6 +30,17 @@ const handlePayment = async(bookingId) => {
   try {
     const { data } = await axios.post("/api/bookings/paystack-payment", { bookingId })
     if (data.success) {
+      
+      // Check if this is a mock payment
+      if (data.isMockPayment) {
+        toast.success('Redirecting to mock payment processor...');
+        // Get the booking details for amount
+        const booking = bookingData.find(b => b._id === bookingId);
+        const amount = booking ? booking.totalPrice : 0;
+        navigate(`/mock-payment?reference=${data.reference}&amount=${amount}`);
+        return;
+      }
+      
       // Check if PaystackPop is available
       if (typeof PaystackPop !== 'undefined') {
         // Use Paystack Popup
@@ -74,6 +85,8 @@ const handlePayment = async(bookingId) => {
     toast.error(error.message)
   }
 }
+
+
 
   const handleCancelBooking = async () => {
     if (!selectedBookingId) return

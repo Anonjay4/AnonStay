@@ -2,6 +2,7 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { useParams } from "react-router-dom"
 import { AppContext } from '../context/AppContext'
+import { MockPayment } from '../components/MockPayment'
 import { Bath, Building, Car, Coffee, Eye, Mountain, TreePine, Tv, User, Utensils, Wifi, MapPin, Star, CheckCircle, XCircle, Phone, WavesLadder, UtensilsCrossed, Bubbles, MartiniIcon, Wine, Volleyball, BrickWallFire, CableCar, Dumbbell, BriefcaseBusiness, EggFried, Rose, Binoculars, Calendar, HousePlus, Gift, Info, Tag, Clock, AlertCircle } from "lucide-react"
 import {toast} from 'react-hot-toast'
 
@@ -231,6 +232,70 @@ const SingularRoom = () => {
     return phone;
   };
 
+  const handlePayment = async(bookingId) => {
+  try {
+    const { data } = await axios.post("/api/bookings/paystack-payment", { bookingId })
+    if (data.success) {
+      
+      // Check if this is a mock payment
+      if (data.isMockPayment) {
+        toast.success('Redirecting to mock payment processor...');
+        navigate(`/mock-payment?reference=${data.reference}&amount=${finalPrice}`);
+        setLoading(false)
+        return;
+      }
+      
+      // Check if PaystackPop is available for real payments
+      if (typeof PaystackPop !== 'undefined') {
+        // Use Paystack Popup
+        const handler = PaystackPop.setup({
+          key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728',
+          email: user.email,
+          amount: Math.round(finalPrice * 100),
+          currency: 'NGN',
+          ref: data.reference,
+          callback: function(response) {
+            toast.success('Payment successful! Verifying...')
+            
+            // Verify payment
+            axios.post("/api/bookings/verify-payment", {
+              reference: response.reference
+            }).then((verifyResponse) => {
+              if (verifyResponse.data.success) {
+                toast.success("Payment verified successfully!")
+                navigate("/my-bookings")
+                scrollTo(0, 0)
+              } else {
+                toast.error("Payment verification failed")
+              }
+              setLoading(false)
+            }).catch((verifyError) => {
+              toast.error("Payment verification error")
+              console.error(verifyError)
+              setLoading(false)
+            })
+          },
+          onClose: function() {
+            toast.info('Payment cancelled')
+            setLoading(false)
+          }
+        })
+        handler.openIframe()
+      } else {
+        // Fallback to redirect if popup not available
+        toast.info('Redirecting to payment page...')
+        window.location.href = data.url
+      }
+    } else {
+      toast.error(data.message)
+      setLoading(false)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || error.message)
+    setLoading(false)
+  }
+}
+
 const onSubmitHandler = async (e) => {
   e.preventDefault()
   
@@ -273,64 +338,8 @@ const onSubmitHandler = async (e) => {
         toast.success(data.message)
         
         if (bookingData.paymentMethod === "Paystack") {
-          try {
-            // Get the booking ID from the response
-            const bookingId = data.bookingId
-            
-            // Initialize payment
-            const paymentResponse = await axios.post("/api/bookings/paystack-payment", {
-              bookingId: bookingId
-            })
-            
-            if (paymentResponse.data.success) {
-              // Check if PaystackPop is available (loaded from CDN)
-              if (typeof PaystackPop !== 'undefined') {
-                // Use Paystack Popup
-                const handler = PaystackPop.setup({
-                  key: 'pk_test_e624e942dba637d5cd680259acd142ca26338728', // Your public key
-                  email: user.email, // Get from user context
-                  amount: Math.round(finalPrice * 100), // Convert to kobo
-                  currency: 'NGN',
-                  ref: `booking_${bookingId}_${Date.now()}`,
-                  callback: function(response) {
-                    // Payment successful
-                    toast.success('Payment successful! Verifying...')
-                    
-                    // Verify payment
-                    axios.post("/api/bookings/verify-payment", {
-                      reference: response.reference
-                    }).then((verifyResponse) => {
-                      if (verifyResponse.data.success) {
-                        toast.success("Payment verified successfully!")
-                        navigate("/my-bookings")
-                        scrollTo(0, 0)
-                      } else {
-                        toast.error("Payment verification failed")
-                      }
-                    }).catch((verifyError) => {
-                      toast.error("Payment verification error")
-                      console.error(verifyError)
-                    })
-                  },
-                  onClose: function() {
-                    toast.info('Payment cancelled')
-                    setLoading(false)
-                  }
-                })
-                handler.openIframe()
-              } else {
-                // Fallback to redirect if popup not available
-                window.location.href = paymentResponse.data.url
-              }
-            } else {
-              toast.error("Failed to initialize payment")
-              setLoading(false)
-            }
-          } catch (paymentError) {
-            console.error("Payment initialization error:", paymentError)
-            toast.error("Payment initialization failed. Please try again.")
-            setLoading(false)
-          }
+          // Call the handlePayment function instead of duplicating the logic
+          await handlePayment(data.bookingId)
         } else {
           // For "Pay At Hotel"
           navigate("/my-bookings")
