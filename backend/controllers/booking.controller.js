@@ -1,8 +1,9 @@
 import transporter from '../config/nodemailer.js';
-import Booking from '../models/booking.model.js'
-import Hotel from '../models/hotel.model.js'
-import Room from '../models/room.model.js'
-import User from '../models/user.model.js'
+import Booking from '../models/booking.model.js';
+import Hotel from '../models/hotel.model.js';
+import Room from '../models/room.model.js';
+import User from '../models/user.model.js';
+import axios from 'axios';
 
 const awardLoyaltyPoint = async (bookingId) => {
     try {
@@ -177,7 +178,7 @@ export const bookRoom = async (req, res) => {
             persons,
             totalPrice,
             originalPrice,
-            paymentMethod: paymentMethod === "Pay Online" ? "Mock Payment" : paymentMethod,
+            paymentMethod: paymentMethod === "Pay Online" ? "Paystack" : paymentMethod,
             loyaltyPointsUsed: useLoyaltyDiscount ? loyaltyPointsUsed : 0,
             discountApplied: useLoyaltyDiscount ? discountPercentage : 0
         })
@@ -277,67 +278,90 @@ export const getHotelBookings = async (req, res) => {
     }
 }
 
-// Mock Payment API - replaces Paystack payment
-export const mockPayment = async (req, res) => {
+// Initialize Paystack Payment
+export const initiatePaystackPayment = async (req, res) => {
     try {
-        const { bookingId } = req.body
-        const booking = await Booking.findById(bookingId).populate('user')
-        
+        const { bookingId } = req.body;
+        const booking = await Booking.findById(bookingId).populate('user');
+
         if (!booking) {
-            return res.status(404).json({ message: "Booking not found", success: false })
+            return res.status(404).json({ message: "Booking not found", success: false });
         }
 
-        const roomData = await Room.findById(booking.room).populate("hotel")
-        const totalPrice = booking.totalPrice
+        const reference = `booking_${bookingId}_${Date.now()}`;
 
-        // Generate a mock reference
-        const mockReference = `mock_${bookingId}_${Date.now()}`
+        const initResponse = await axios.post(
+            "https://api.paystack.co/transaction/initialize",
+            {
+                amount: booking.totalPrice * 100,
+                email: booking.user.email,
+                reference,
+                callback_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/my-bookings`
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
 
-        // Store the mock reference
-        await booking.updateOne({ 
-            paymentReference: mockReference,
-            paymentMethod: "Mock Payment" 
-        })
+        await booking.updateOne({
+            paymentReference: reference,
+            paymentMethod: "Paystack"
+        });
 
-        res.status(200).json({ 
-            message: "Payment initialized successfully", 
-            success: true, 
-            reference: mockReference,
-            amount: totalPrice
-        })
+        res.status(200).json({
+            message: "Payment initialized successfully",
+            success: true,
+            authorizationUrl: initResponse.data.data.authorization_url,
+            reference
+        });
 
     } catch (error) {
-        console.log("Mock payment error:", error)
-        res.status(500).json({ message: "Internal Server Error", success: false })
+        console.log("Paystack init error:", error.response?.data || error);
+        res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
 
-// Mock Payment Verification - replaces Paystack verification
-export const verifyMockPayment = async (req, res) => {
+// Verify Paystack Payment
+export const verifyPaystackPayment = async (req, res) => {
     try {
-        const { reference } = req.body
-        
+        const { reference } = req.body;
+
         if (!reference) {
-            return res.status(400).json({ 
-                message: "Payment reference is required", 
-                success: false 
-            })
+            return res.status(400).json({
+                message: "Payment reference is required",
+                success: false
+            });
         }
-        
-        console.log(`🔍 Mock verifying payment: ${reference}`);
-        
-        // Extract booking ID from mock reference
-        const bookingIdMatch = reference.match(/mock_([a-f\d]{24})_\d+/)
+
+        const verifyResponse = await axios.get(
+            `https://api.paystack.co/transaction/verify/${reference}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+                }
+            }
+        );
+
+        if (verifyResponse.data.data.status !== 'success') {
+            return res.status(400).json({
+                message: "Payment verification failed",
+                success: false
+            });
+        }
+
+        const bookingIdMatch = reference.match(/booking_([a-f\d]{24})_/);
         if (!bookingIdMatch) {
-            return res.status(400).json({ 
-                message: "Invalid payment reference", 
-                success: false 
-            })
+            return res.status(400).json({
+                message: "Invalid payment reference",
+                success: false
+            });
         }
-        
-        const bookingId = bookingIdMatch[1]
-        
-        // Find and update booking
+
+        const bookingId = bookingIdMatch[1];
+
         const booking = await Booking.findByIdAndUpdate(
             bookingId,
             {
@@ -346,31 +370,23 @@ export const verifyMockPayment = async (req, res) => {
                 paymentReference: reference
             },
             { new: true }
-        )
+        );
 
         if (booking) {
-            console.log(`📋 Payment verified for booking: ${bookingId}`);
-            
-            // Award loyalty point for confirmed booking
-            const loyaltyAwarded = await awardLoyaltyPoint(bookingId);
-            if (!loyaltyAwarded) {
-                console.log(`⚠️ Failed to award loyalty point for booking: ${bookingId}`);
-            }
-        } else {
-            console.log(`❌ Failed to update booking: ${bookingId}`);
+            await awardLoyaltyPoint(bookingId);
         }
 
-        res.status(200).json({ 
-            message: "Payment verified successfully", 
-            success: true 
-        })
-        
+        res.status(200).json({
+            message: "Payment verified successfully",
+            success: true
+        });
+
     } catch (error) {
-        console.log("💥 Payment verification error:", error)
-        res.status(500).json({ 
-            message: "Internal Server Error", 
-            success: false 
-        })
+        console.log("💥 Paystack verification error:", error.response?.data || error);
+        res.status(500).json({
+            message: "Internal Server Error",
+            success: false
+        });
     }
 }
 
@@ -432,7 +448,7 @@ export const updateBookingStatus = async (req, res) => {
                 console.log(`🔄 Refunded ${booking.loyaltyPointsUsed} loyalty points to user`);
             }
             
-            // For mock payments, we'll simulate a refund process
+            // For online payments, simulate a refund process
             if (booking.isPaid) {
                 const now = new Date()
                 const checkInDate = new Date(booking.checkIn)
@@ -451,7 +467,7 @@ export const updateBookingStatus = async (req, res) => {
                 updateData.refundInitiated = true
                 updateData.refundAmount = refundAmount
                 updateData.refundDate = new Date()
-                updateData.refundStatus = "completed" // For mock payments, mark as completed
+                updateData.refundStatus = "completed" // Mark as completed for online payments
                 updateData.refundReference = `refund_${bookingId}_${Date.now()}`
             }
             
