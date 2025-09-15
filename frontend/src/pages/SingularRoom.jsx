@@ -271,7 +271,6 @@ const onSubmitHandler = async (e) => {
               bookingId: data.bookingId,
               callbackUrl: window.location.origin
             })
-            const init = await axios.post("/api/bookings/paystack/initialize", { bookingId: data.bookingId })
             if (init.data.success) {
               window.location.href = init.data.authorizationUrl
             } else {
