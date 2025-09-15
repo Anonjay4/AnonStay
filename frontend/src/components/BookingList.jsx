@@ -118,7 +118,7 @@ const BookingList = ({ bookings, loading, markAsPaid, updateStatus, confirmCheck
                 <div className='col-span-4'>
                   <div className='flex gap-4'>
                     <img
-                      src={`https://anonstay-production.up.railway.app/images/${booking.room.images[0]}`}
+                      src={booking.room.images[0]}
                       alt={booking.room.roomType}
                       className='w-24 h-20 rounded-lg object-cover flex-shrink-0'
                     />
@@ -315,7 +315,7 @@ const BookingList = ({ bookings, loading, markAsPaid, updateStatus, confirmCheck
                 {/* Hotel Info */}
                 <div className='flex gap-2'>
                   <img
-                    src={`https://anonstay-production.up.railway.app/images/${booking.room.images[0]}`}
+                    src={booking.room.images[0]}
                     alt={booking.room.roomType}
                     className='w-20 h-14 rounded-lg object-cover flex-shrink-0'
                   />

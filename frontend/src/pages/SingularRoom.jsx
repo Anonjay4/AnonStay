@@ -415,14 +415,14 @@ const onSubmitHandler = async (e) => {
           </h2>
           <div className='grid lg:grid-cols-3 gap-6'>
             <div className='lg:col-span-2'>
-              <img src={`https://anonstay-production.up.railway.app/images/${room.images[selectedImage]}`} 
-              alt={`${room.roomType} - Image ${selectedImage + 1}`} 
+              <img src={room.images[selectedImage]}
+              alt={`${room.roomType} - Image ${selectedImage + 1}`}
               className='w-full h-96 object-cover rounded-xl'/>
             </div>
             <div className='grid grid-cols-2 lg:grid-cols-1 gap-4'>
               {
                 room.images.map((image, index) => (
-                  <img key={index} src={`https://anonstay-production.up.railway.app/images/${image}`} alt={`Thumbnail ${index + 1}`}
+                  <img key={index} src={image} alt={`Thumbnail ${index + 1}`}
                     className={`h-24 lg:h-20 object-cover rounded-lg cursor-pointer transition-all duration-200
                       ${
                         selectedImage === index
