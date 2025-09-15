@@ -132,14 +132,14 @@ const Navbar = () => {
                                 <div className="relative group inline-block">
 {/*                                     <img src={assets.profile_icon} alt="" className="w-12 h-12 rounded-full cursor-pointer"/> */}
                                     <ul className="py-2">
-                                        <li className="border rounded-full cursor-pointer text-white transition-all">
-                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/profile"} onClick={() => setIsMenuOpen(false)}>My Profile</Link>
+                                        <li className="border rounded-full cursor-pointer text-white transition-all mb-2 flex text-center">
+                                            <Link className="block px-2 py-2 text-sm text-white hover:bg-gray-950" to={"/profile"} onClick={() => setIsMenuOpen(false)}>My Profile</Link>
                                         </li>
-                                        <li className="border rounded-full cursor-pointer text-white transition-all">
-                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/my-bookings"}onClick={() => setIsMenuOpen(false)}>My Bookings</Link>
+                                        <li className="border rounded-full cursor-pointer text-white transition-all mb-2 flex text-center">
+                                            <Link className="block px-2 py-2 text-sm text-white hover:bg-gray-950" to={"/my-bookings"}onClick={() => setIsMenuOpen(false)}>My Bookings</Link>
                                         </li>
-                                        <li className="border rounded-full cursor-pointer text-white transition-all" onClick={ logout }>
-                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" onClick={() => setIsMenuOpen(false)}>Logout</Link>
+                                        <li className="border rounded-full cursor-pointer text-white transition-all mb-2 flex text-center" onClick={ logout }>
+                                            <Link className="block px-2 py-2 text-sm text-white hover:bg-gray-950" onClick={() => setIsMenuOpen(false)}>Logout</Link>
                                         </li>
                                     </ul>
 
