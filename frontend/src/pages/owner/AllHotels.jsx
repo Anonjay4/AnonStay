@@ -125,11 +125,6 @@ const AllHotels = () => {
                           alt={hotel.hotelName}
                           className="w-20 h-16 rounded-xl object-cover shadow-md"
                         />
-                          <img
-                            src={getImageSrc(hotel.image)}
-                            alt={hotel.hotelName}
-                            className="w-20 h-16 rounded-xl object-cover shadow-md"
-                          />
                         <h3 className="text-lg font-semibold text-gray-200 hover:text-yellow-600 transition-colors">
                           {hotel.hotelName}
                         </h3>
