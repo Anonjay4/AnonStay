@@ -29,6 +29,7 @@ app.get("/api/paystack/public-key", (req, res) => {
     res.json({ key: process.env.PAYSTACK_PUBLIC_KEY || "" });
 })
 
+app.use("/images", express.static("uploads"))
 app.use("/api/user", userRouter)
 app.use("/api/hotel", hotelRouter)
 app.use("/api/room", roomRouter)

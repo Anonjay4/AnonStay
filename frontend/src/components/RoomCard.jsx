@@ -21,7 +21,7 @@ const RoomCard = ({ room }) => {
                 )}
                 
                 <img 
-                    src={room.images[0]}
+                    src={`https://anonstay-production.up.railway.app/images/${room.images[0]}`} 
                     alt={room.roomType} 
                     className='h-60 w-96 object-cover rounded-lg' 
                 />

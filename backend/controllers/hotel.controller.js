@@ -6,7 +6,7 @@ export const registerHotel = async(req, res) => {
     const {id} = req.user
     try {
         const { hotelName, hotelAddress, rating, price, amenities } = req.body
-        const image = req.file?.path
+        const image = req.file.filename
         if(!hotelName || !hotelAddress || !rating || !price || !amenities || !image) {
             return res.status(400).json({ message: "All fields are required", success: false })
         }

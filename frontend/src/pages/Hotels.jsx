@@ -28,7 +28,7 @@ const Hotels = () => {
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
               <img 
-                src={item.image}
+                src={`https://anonstay-production.up.railway.app/images/${item.image}`} 
                 alt={item.hotelName} 
                 className='h-64 w-80 object-cover object-top'
               />
