@@ -1,4 +1,6 @@
 import Hotel from "../models/hotel.model.js";
+import fs from "fs";
+import cloudinary from "../config/cloudinary.js";
 
 // Register a new hotel
 
@@ -6,10 +8,14 @@ export const registerHotel = async(req, res) => {
     const {id} = req.user
     try {
         const { hotelName, hotelAddress, rating, price, amenities } = req.body
+        const localPath = req.file?.path
+        if(!hotelName || !hotelAddress || !rating || !price || !amenities || !localPath) {
         const image = req.file?.path
         if(!hotelName || !hotelAddress || !rating || !price || !amenities || !image) {
             return res.status(400).json({ message: "All fields are required", success: false })
         }
+        const uploaded = await cloudinary.uploader.upload(localPath, { folder: "hotels" })
+        fs.unlinkSync(localPath)
 
         const newHotel = new Hotel({
             hotelName,
@@ -17,7 +23,7 @@ export const registerHotel = async(req, res) => {
             rating,
             price,
             amenities,
-            image,
+            image: uploaded.secure_url,
             owner: id,
         })
         await newHotel.save()

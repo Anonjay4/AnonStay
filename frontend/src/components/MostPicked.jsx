@@ -27,6 +27,9 @@ const MostPicked = () => {
               className='relative group rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105'
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
+              <img
+                src={item.image}
+                alt={item.hotelName}
               <img 
                 src={item.image}
                 alt={item.hotelName} 

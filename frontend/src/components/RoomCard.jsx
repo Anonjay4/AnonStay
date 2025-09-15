@@ -20,6 +20,10 @@ const RoomCard = ({ room }) => {
                     </div>
                 )}
                 
+                <img
+                    src={room.images[0]}
+                    alt={room.roomType}
+                    className='h-60 w-96 object-cover rounded-lg'
                 <img 
                     src={room.images[0]}
                     alt={room.roomType} 

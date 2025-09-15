@@ -7,6 +7,7 @@
     "server": "nodemon index.js",
     "start": "node index.js",
     "test": "node --test",
+    "migrate-images": "node scripts/migrateToCloudinary.js"
     "migrate-images": "node scripts/migrateUploadsToCloudinary.js"
   },
   "keywords": [],
@@ -27,7 +28,7 @@
     "nodemailer": "^7.0.5",
     "paystack": "^2.0.1",
     "stripe": "^18.4.0",
-    "cloudinary": "^1.41.0",
+    "cloudinary": "^1.41.1",
     "multer-storage-cloudinary": "^4.0.0"
   }
 }
