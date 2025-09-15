@@ -7,7 +7,6 @@
     "server": "nodemon index.js",
     "start": "node index.js",
     "test": "node --test",
-    "migrate-images": "node scripts/migrateToCloudinary.js"
     "migrate-images": "node scripts/migrateUploadsToCloudinary.js"
   },
   "keywords": [],

@@ -7,8 +7,8 @@ const Hotels = () => {
 
   const handleHotelClick = (hotelId, hotelName) => {
     // Navigate to hotel-specific rooms page
-    navigate(`/hotel/${hotelId}/rooms`, { 
-      state: { hotelName } 
+    navigate(`/hotel/${hotelId}/rooms`, {
+      state: { hotelName }
     })
     scrollTo(0, 0);
   }
@@ -22,17 +22,14 @@ const Hotels = () => {
       <div className='flex flex-wrap items-center justify-center mt-12 gap-4 max-w-5xl mx-auto'>
         {
           hotelData.map((item, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className='relative group rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105'
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
               <img
                 src={item.image}
                 alt={item.hotelName}
-              <img 
-                src={item.image}
-                alt={item.hotelName} 
                 className='h-64 w-80 object-cover object-top'
               />
               <div className='absolute inset-0 flex flex-col justify-end p-4 text-white opacity-0 md:opacity-0 group-hover:opacity-100 group-hover:bg-[#fcae26]/60 transition-all duration-300'>
@@ -45,7 +42,7 @@ const Hotels = () => {
                   Click to view rooms
                 </div>
               </div>
-              
+
               {/* Always visible hotel name for mobile */}
               <div className='md:hidden absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4'>
                 <h1 className='text-white text-lg font-medium'>{item.hotelName}</h1>
@@ -63,3 +60,4 @@ const Hotels = () => {
 }
 
 export default Hotels
+
