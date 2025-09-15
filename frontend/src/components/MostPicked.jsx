@@ -28,7 +28,7 @@ const MostPicked = () => {
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
               <img 
-                src={`https://anonstay-production.up.railway.app/images/${item.image}`} 
+                src={item.image}
                 alt={item.hotelName} 
                 className='h-64 w-80 object-cover object-top'
               />

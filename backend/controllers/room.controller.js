@@ -4,7 +4,7 @@ import Room from "../models/room.model.js";
 export const addRoom = async (req, res) => {
     try {
         const { roomType, hotel, pricePerNight, description, amenities, isAvailable } = req.body
-        const image = req.files?.map((file) => file.filename)
+        const image = req.files?.map((file) => file.path)
 
         const newRoom = await Room.create({
             roomType,
