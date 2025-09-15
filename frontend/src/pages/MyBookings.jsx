@@ -55,6 +55,7 @@ const handlePayment = async(bookingId) => {
       bookingId,
       callbackUrl: window.location.origin
     })
+    const { data } = await axios.post("/api/bookings/paystack/initialize", { bookingId })
     if (data.success) {
       window.location.href = data.authorizationUrl
     } else {
