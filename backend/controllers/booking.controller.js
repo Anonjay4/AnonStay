@@ -4,6 +4,7 @@ import Hotel from '../models/hotel.model.js';
 import Room from '../models/room.model.js';
 import User from '../models/user.model.js';
 import axios from 'axios';
+import { toKobo } from '../utils/paystack.js';
 
 const awardLoyaltyPoint = async (bookingId) => {
     try {
@@ -293,7 +294,7 @@ export const initiatePaystackPayment = async (req, res) => {
         const initResponse = await axios.post(
             "https://api.paystack.co/transaction/initialize",
             {
-                amount: booking.totalPrice * 100,
+                amount: toKobo(booking.totalPrice),
                 email: booking.user.email,
                 reference,
                 callback_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/my-bookings`
