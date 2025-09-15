@@ -4,6 +4,7 @@ import { MapPin, Star, ArrowLeft } from 'lucide-react'
 import { AppContext } from '../context/AppContext'
 import { toast } from 'react-hot-toast'
 import RoomCard from '../components/RoomCard'
+import { getImageSrc } from '../utils/image'
 
 const HotelRooms = () => {
   const { hotelId } = useParams()
@@ -63,7 +64,7 @@ const HotelRooms = () => {
           <div className='bg-gray-800 rounded-lg p-6 mb-8'>
             <div className='flex flex-col md:flex-row gap-6'>
               <img
-                src={hotelData.image}
+                src={getImageSrc(hotelData.image)}
                 alt={hotelData.hotelName}
                 className='w-full md:w-64 h-48 object-cover rounded-lg'
               />

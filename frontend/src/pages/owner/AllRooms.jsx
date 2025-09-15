@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { CircleUserRound, MapPin, Star, Trash2, Edit2, Tag, Clock } from 'lucide-react'
 import {toast} from 'react-hot-toast'
 import RoomManagementModal from '../../components/RoomManagementModal'
+import { getImageSrc } from '../../utils/image'
 
 const AllRooms = () => {
   const { axios, navigate} = useContext(AppContext)
@@ -158,7 +159,7 @@ const AllRooms = () => {
                       <td className='p-6'>
                         <div className='flex items-center space-x-4'>
                           <div className='relative'>
-                            <img src={room.images[0]} alt={room.roomType} className='w-20 h-16 rounded-xl object-cover shadow-md' />
+                            <img src={getImageSrc(room.images[0])} alt={room.roomType} className='w-20 h-16 rounded-xl object-cover shadow-md' />
                             <div className='absolute inset-0 bg-gradient-to-t from-black-20 to-transparent rounded-xl'></div>
                             {discountActive && (
                               <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
@@ -269,7 +270,7 @@ const AllRooms = () => {
                   </div>
                 )}
                 
-                <img src={room.images[0]} alt={room.roomType} className='w-full h-48 rounded-xl object-cover mb-4' />
+                <img src={getImageSrc(room.images[0])} alt={room.roomType} className='w-full h-48 rounded-xl object-cover mb-4' />
                 
                 <div className="flex justify-between items-start mb-4">
                   <div>

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { User, Mail, Phone, Calendar, Star, Gift, MapPin, CreditCard, CheckCircle, Clock, XCircle, Edit3, Save, X } from "lucide-react"
 import { AppContext } from '../context/AppContext.jsx'
 import { toast } from 'react-hot-toast'
+import { getImageSrc } from '../utils/image'
 
 const UserProfile = () => {
   const { axios, navigate } = useContext(AppContext)
@@ -348,9 +349,9 @@ const fetchUserBookings = async () => {
                   return (
                     <div key={booking._id} className='p-6 hover:bg-gray-800/50 transition-colors'>
                       <div className='flex gap-4'>
-                        <img 
-                          src={booking.room.images[0]}
-                          alt={booking.room.roomType} 
+                        <img
+                          src={getImageSrc(booking.room.images[0])}
+                          alt={booking.room.roomType}
                           className='w-16 h-16 rounded-lg object-cover'
                         />
                         <div className='flex-1 min-w-0'>
