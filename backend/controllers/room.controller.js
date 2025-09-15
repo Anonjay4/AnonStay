@@ -3,23 +3,58 @@ import Room from "../models/room.model.js";
 // Add new room
 export const addRoom = async (req, res) => {
     try {
-        const { roomType, hotel, pricePerNight, description, amenities, isAvailable } = req.body
+        const { roomType, hotel, pricePerNight, description, isAvailable } = req.body
+        const rawAmenities = req.body?.amenities
+        const amenities = Array.isArray(rawAmenities)
+            ? rawAmenities
+            : rawAmenities
+                ? [rawAmenities]
+                : []
         const imageFiles = req.files || []
-
         const uploadedImages = imageFiles.map((file) => file.path)
+        const parsedPrice = Number(pricePerNight)
+        const availability = typeof isAvailable === "string"
+            ? ["true", "1", "on", "yes"].includes(isAvailable.toLowerCase())
+            : Boolean(isAvailable)
+
+        if (!roomType?.trim()) {
+            return res.status(400).json({ message: "Room type is required", success: false })
+        }
+
+        if (!hotel) {
+            return res.status(400).json({ message: "Please select the hotel this room belongs to", success: false })
+        }
+
+        if (!description?.trim()) {
+            return res.status(400).json({ message: "Room description is required", success: false })
+        }
+
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+            return res.status(400).json({ message: "Price per night must be greater than 0", success: false })
+        }
+
+        if (!amenities.length) {
+            return res.status(400).json({ message: "Select at least one room amenity", success: false })
+        }
+
+        if (!uploadedImages.length) {
+            return res.status(400).json({ message: "Upload at least one room image", success: false })
+        }
+
         const newRoom = await Room.create({
-            roomType,
+            roomType: roomType.trim(),
             hotel,
-            pricePerNight,
-            description,
+            pricePerNight: parsedPrice,
+            description: description.trim(),
             amenities,
-            isAvailable,
+            isAvailable: availability,
             images: uploadedImages,
         })
         await newRoom.save()
         return res.status(201).json({ message: "Room added successfully", success: true })
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" })
+        console.error("addRoom error:", error)
+        return res.status(500).json({ message: "Internal Server Error", success: false })
     }
 }
 

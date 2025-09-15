@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 const RegisterHotel = () => {
 
     const { axios, navigate } = useContext(AppContext)
-    const [ data, setData ] = useState({
+    const getInitialFormState = () => ({
         hotelName:"",
         hotelAddress:"",
         rating:"",
@@ -15,6 +15,7 @@ const RegisterHotel = () => {
         amenities:[],
         image:null,
     })
+    const [ data, setData ] = useState(getInitialFormState)
     const amenitiesOptions = [
       "Ocean View" ,
       "Mountain View" ,
@@ -86,26 +87,45 @@ const RegisterHotel = () => {
 
     const handleSubmit = async(e) => {
         e.preventDefault()
-        const formData = new FormData()
-        formData.append("hotelName", data.hotelName)
-        formData.append("hotelAddress", data.hotelAddress)
-        formData.append("rating", data.rating)
-        formData.append("price", data.price)
+
+        if (!file) {
+            toast.error("Please upload a hotel image")
+            return
+        }
+
+        if (!data.amenities.length) {
+            toast.error("Select at least one amenity")
+            return
+        }
+
+        if (!data.rating || Number(data.rating) <= 0 || Number(data.rating) > 5) {
+            toast.error("Please provide a rating between 1 and 5")
+            return
+        }
+
+        const payload = new FormData()
+        payload.append("hotelName", data.hotelName.trim())
+        payload.append("hotelAddress", data.hotelAddress.trim())
+        payload.append("rating", data.rating)
+        payload.append("price", data.price)
         data.amenities.forEach((amenity) => {
-          formData.append("amenities", amenity);
-        });
-        formData.append("image", file)
+          payload.append("amenities", amenity)
+        })
+        payload.append("image", file)
 
         try {
-            const { data } = await axios.post("/api/hotel/register", formData)
-            if (data.success) {
-                toast.success(data.message)
+            const response = await axios.post("/api/hotel/register", payload)
+            if (response.data.success) {
+                toast.success(response.data.message)
+                setData(getInitialFormState())
+                setFile(null)
+                setPreview(null)
                 navigate("/owner")
             } else{
-                toast.error(data.message)
+                toast.error(response.data.message)
             }
         } catch (error) {
-            toast.error(data.message)
+            toast.error(error.response?.data?.message || error.message || "Failed to register hotel")
         }
     }
 
