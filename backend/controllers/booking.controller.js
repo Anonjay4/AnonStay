@@ -4,6 +4,7 @@ import Hotel from '../models/hotel.model.js';
 import Room from '../models/room.model.js';
 import User from '../models/user.model.js';
 import axios from 'axios';
+
 import { toKobo } from '../utils/paystack.js';
 
 const awardLoyaltyPoint = async (bookingId) => {
@@ -298,6 +299,7 @@ export const initiatePaystackPayment = async (req, res) => {
         const initResponse = await axios.post(
             "https://api.paystack.co/transaction/initialize",
             {
+                amount: Math.round(booking.totalPrice * 100),
                 amount: booking.totalPrice * 100,
                 email: booking.user.email,
                 reference,
@@ -336,6 +338,7 @@ export const initiatePaystackPayment = async (req, res) => {
             paymentReference: reference,
             paymentMethod: "Paystack"
         });
+
 
         res.status(200).json({
             message: "Payment initialized successfully",
