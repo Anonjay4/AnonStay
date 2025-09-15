@@ -2,6 +2,7 @@ import React, { useContext } from 'react'
 import { motion } from 'motion/react'
 import { AppContext } from '../context/AppContext'
 import { Tag, Clock } from 'lucide-react'
+import { getImageSrc } from '../utils/image'
 
 const RoomCard = ({ room }) => {
     const { navigate, isRoomDiscountActive, getCurrentRoomPrice, getDaysRemaining } = useContext(AppContext)
@@ -21,7 +22,7 @@ const RoomCard = ({ room }) => {
                 )}
                 
                 <img
-                    src={room.images[0]}
+                    src={getImageSrc(room.images[0])}
                     alt={room.roomType}
                     className='h-60 w-96 object-cover rounded-lg'
                 />

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom"
 import { AppContext } from '../context/AppContext'
 import { Bath, Building, Car, Coffee, Eye, Mountain, TreePine, Tv, User, Utensils, Wifi, MapPin, Star, CheckCircle, XCircle, Phone, WavesLadder, UtensilsCrossed, Bubbles, MartiniIcon, Wine, Volleyball, BrickWallFire, CableCar, Dumbbell, BriefcaseBusiness, EggFried, Rose, Binoculars, Calendar, HousePlus, Gift, Info, Tag, Clock, AlertCircle } from "lucide-react"
 import {toast} from 'react-hot-toast'
+import { getImageSrc } from '../utils/image'
 
 const SingularRoom = () => {
   const { roomData, axios, navigate, user } = useContext(AppContext)
@@ -415,14 +416,14 @@ const onSubmitHandler = async (e) => {
           </h2>
           <div className='grid lg:grid-cols-3 gap-6'>
             <div className='lg:col-span-2'>
-              <img src={room.images[selectedImage]}
+              <img src={getImageSrc(room.images[selectedImage])}
               alt={`${room.roomType} - Image ${selectedImage + 1}`}
               className='w-full h-96 object-cover rounded-xl'/>
             </div>
               <div className='grid grid-cols-2 lg:grid-cols-1 gap-4'>
               {
                   room.images.map((image, index) => (
-                    <img key={index} src={image} alt={`Thumbnail ${index + 1}`}
+                    <img key={index} src={getImageSrc(image)} alt={`Thumbnail ${index + 1}`}
                       className={`h-24 lg:h-20 object-cover rounded-lg cursor-pointer transition-all duration-200
                         ${
                           selectedImage === index

@@ -3,6 +3,7 @@ import { MapPin, Calendar, Users, CreditCard, CheckCircle, Clock, XCircle, Eye, 
 import { useSearchParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext.jsx'
 import { toast } from 'react-hot-toast'
+import { getImageSrc } from '../utils/image'
 
 const MyBookings = () => {
 
@@ -260,7 +261,7 @@ const handlePayment = async(bookingId) => {
                       {/* Hotel & Room Info */}
                       <div className='col-span-1 md:col-span-4'>
                         <div className='flex gap-4'>
-                          <img src={booking.room.images[0]} alt={booking.room.roomType} className='w-20 h-14 md:w-24 md:h-20 rounded-lg object-cover flex-shrink-o' />
+                          <img src={getImageSrc(booking.room.images[0])} alt={booking.room.roomType} className='w-20 h-14 md:w-24 md:h-20 rounded-lg object-cover flex-shrink-o' />
                           <div className='flex-1 min-w-0'>
                             <h3 className='font-semibold text-gray-200 text-lg mb-1'>
                               {booking.hotel.hotelName}
@@ -415,7 +416,7 @@ const handlePayment = async(bookingId) => {
                       {/* Hotel & Room Info */}
                       <div className='col-span-3 md:col-span-5'>
                         <div className='flex gap-2 md:gap-4'>
-                          <img src={booking.room.images[0]} alt={booking.room.roomType} className='w-20 h-14 md:w-24 md:h-20 rounded-lg object-cover flex-shrink-o' />
+                          <img src={getImageSrc(booking.room.images[0])} alt={booking.room.roomType} className='w-20 h-14 md:w-24 md:h-20 rounded-lg object-cover flex-shrink-o' />
                           <div className='flex-1 min-w-0'>
                             <h3 className='font-semibold text-gray-200 text-lg mb-1'>
                               {booking.hotel.hotelName}

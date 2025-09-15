@@ -3,6 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import { motion } from 'framer-motion';
 import { CircleUserRound, MapPin, Star, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getImageSrc } from '../../utils/image';
 
 const AllHotels = () => {
   const { navigate, axios } = useContext(AppContext);
@@ -120,12 +121,12 @@ const AllHotels = () => {
                     <td className="py-6 px-4">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={hotel.image}
+                          src={getImageSrc(hotel.image)}
                           alt={hotel.hotelName}
                           className="w-20 h-16 rounded-xl object-cover shadow-md"
                         />
                           <img
-                            src={hotel.image}
+                            src={getImageSrc(hotel.image)}
                             alt={hotel.hotelName}
                             className="w-20 h-16 rounded-xl object-cover shadow-md"
                           />
@@ -199,12 +200,12 @@ const AllHotels = () => {
               className="bg-gray-800 rounded-xl shadow-xl p-4 flex flex-col space-y-4"
             >
               <img
-                src={hotel.image}
+                src={getImageSrc(hotel.image)}
                 alt={hotel.hotelName}
                 className="w-full h-40 rounded-lg object-cover"
               />
                 <img
-                  src={hotel.image}
+                  src={getImageSrc(hotel.image)}
                   alt={hotel.hotelName}
                   className="w-full h-40 rounded-lg object-cover"
                 />

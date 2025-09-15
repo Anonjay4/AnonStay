@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { AppContext } from '../context/AppContext'
 import { MapPin } from 'lucide-react';
+import { getImageSrc } from '../utils/image';
 
 const Hotels = () => {
   const { hotelData, navigate } = useContext(AppContext)
@@ -28,7 +29,7 @@ const Hotels = () => {
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
               <img
-                src={item.image}
+                src={getImageSrc(item.image)}
                 alt={item.hotelName}
                 className='h-64 w-80 object-cover object-top'
               />
