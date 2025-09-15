@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 const AddRoom = () => {
 
     const { axios, navigate,  } = useContext(AppContext)
-    const [ roomData, setRoomData ] = useState({
+    const getInitialRoomState = () => ({
         hotel:"",
         roomType:"",
         description:"",
@@ -14,13 +14,14 @@ const AddRoom = () => {
         images:[],
         isAvailable: true,
     })
+    const [ roomData, setRoomData ] = useState(getInitialRoomState)
 
 
     const [hotelData, setHotelData] = useState([]);
     
       const fetchOwnerHotels = async () => {
         try {
-          const { data } = await axios.get("api/hotel/get");
+          const { data } = await axios.get("/api/hotel/get");
           if (data.success) {
             setHotelData(data.hotels);
           } else {
@@ -37,7 +38,12 @@ const AddRoom = () => {
 
 
     const handleChange = (e) => {
-      setRoomData({...roomData, [e.target.name]: e.target.value})
+      const { name, value, type, checked } = e.target
+      if (type === "checkbox" && name === "isAvailable") {
+        setRoomData({ ...roomData, isAvailable: checked })
+      } else {
+        setRoomData({ ...roomData, [name]: value })
+      }
     }
 
     const handleImageChange = (e, index) => {
@@ -92,34 +98,67 @@ const AddRoom = () => {
 
     const handleSubmit = async(e) => {
         e.preventDefault()
-        const formData = new FormData()
-        formData.append("hotel", roomData.hotel)
-        formData.append("roomType", roomData.roomType)
-        formData.append("pricePerNight", roomData.pricePerNight)
-        formData.append("description", roomData.description)
-        formData.append("isAvailable", roomData.isAvailable)
-        roomData.amenities.forEach((amenity) => {
-          formData.append("amenities", amenity);
-        });
+        const selectedImages = roomData.images.filter(Boolean)
 
-        for (let i = 0; i < roomData.images.length; i++) {
-          formData.append("images", roomData.images[i])
+        if (!roomData.hotel) {
+          toast.error("Please select the hotel this room belongs to")
+          return
         }
 
+        if (!roomData.roomType.trim()) {
+          toast.error("Please provide a room type")
+          return
+        }
+
+        if (!roomData.description.trim()) {
+          toast.error("Please provide a room description")
+          return
+        }
+
+        if (!roomData.pricePerNight || Number(roomData.pricePerNight) <= 0) {
+          toast.error("Enter a valid price per night")
+          return
+        }
+
+        if (!roomData.amenities.length) {
+          toast.error("Select at least one room amenity")
+          return
+        }
+
+        if (!selectedImages.length) {
+          toast.error("Please upload at least one room image")
+          return
+        }
+
+        const formData = new FormData()
+        formData.append("hotel", roomData.hotel)
+        formData.append("roomType", roomData.roomType.trim())
+        formData.append("pricePerNight", roomData.pricePerNight)
+        formData.append("description", roomData.description.trim())
+        formData.append("isAvailable", roomData.isAvailable ? "true" : "false")
+        roomData.amenities.forEach((amenity) => {
+          formData.append("amenities", amenity)
+        })
+
+        selectedImages.forEach((imageFile) => {
+          formData.append("images", imageFile)
+        })
+
         try {
-          const { data } = await axios.post("/api/room/add", formData, {
+          const response = await axios.post("/api/room/add", formData, {
             headers: {
             "Content-Type": "multipart/form-data",
           },
           })
-          if (data.success) {
-            toast.success(data.message)
+          if (response.data.success) {
+            toast.success(response.data.message)
+            setRoomData(getInitialRoomState())
             navigate("/owner/rooms")
           } else{
-            toast.error(data.message)
+            toast.error(response.data.message)
           }
         } catch (error) {
-          toast.error(error.message)
+          toast.error(error.response?.data?.message || error.message || "Failed to add room")
         }
     }
 
@@ -158,7 +197,7 @@ const AddRoom = () => {
                 </div>
                 <div className="flex flex-col gap-1 max-w-md">
                     <label className="text-base font-medium" htmlFor="hotel-address">Room Description</label>
-                    <textarea name="description" value={roomData.description} onChange={handleChange} rows={4} className="outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40 resize-none" placeholder="Type here"></textarea>
+                    <textarea name="description" value={roomData.description} onChange={handleChange} rows={4} className="outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40 resize-none" placeholder="Type here" required></textarea>
                 </div>
                 <div className="flex items-center gap-5 flex-wrap">
                     <div className="flex-1 flex flex-col gap-1 w-32">
@@ -207,7 +246,7 @@ const AddRoom = () => {
                     Select Hotel
                   </label>
                   <select name="hotel" value={roomData.hotel} onChange={handleChange}
-                  className="outline-none md:py-2.5 py-2 px-3 rounded border bg-gray-800 cursor-pointer border-gray-500/40">
+                  className="outline-none md:py-2.5 py-2 px-3 rounded border bg-gray-800 cursor-pointer border-gray-500/40" required>
                     <option value="">
                       Select Hotel
                     </option>
@@ -219,10 +258,16 @@ const AddRoom = () => {
                   </select>
                 </div>
                 <div className="flex items-center gap-5 flex-wrap">
-                  <div className="flex-1 flex flex-col gap-1 w-32">
-                    <label className="text-base font-medium" htmlFor="">Availability
-                      <input type="checkbox" name="isAvailable" onChange={handleChange} value={roomData.isAvailable} placeholder="0"
-                      className="outline-none md:py-2.5 py-2 px-3 rounded border-gray-500/40 ml-2 cursor-pointer" required />
+                    <div className="flex-1 flex flex-col gap-1 w-32">
+                    <label className="text-base font-medium" htmlFor="isAvailable">Availability
+                      <input
+                        id="isAvailable"
+                        type="checkbox"
+                        name="isAvailable"
+                        checked={roomData.isAvailable}
+                        onChange={handleChange}
+                        className="outline-none md:py-2.5 py-2 px-3 rounded border-gray-500/40 ml-2 cursor-pointer"
+                      />
                     </label>
                   </div>
                 </div>

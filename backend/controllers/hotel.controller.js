@@ -5,17 +5,42 @@ import Hotel from "../models/hotel.model.js";
 export const registerHotel = async (req, res) => {
     const { id } = req.user
     try {
-        const { hotelName, hotelAddress, rating, price, amenities } = req.body
+        const { hotelName, hotelAddress, rating, price } = req.body
+        const rawAmenities = req.body?.amenities
+        const amenities = Array.isArray(rawAmenities)
+            ? rawAmenities
+            : rawAmenities
+                ? [rawAmenities]
+                : []
+        const parsedRating = Number(rating)
+        const parsedPrice = Number(price)
         const imageUrl = req.file?.path
-        if (!hotelName || !hotelAddress || !rating || !price || !amenities || !imageUrl) {
-            return res.status(400).json({ message: "All fields are required", success: false })
+
+        if (!hotelName?.trim() || !hotelAddress?.trim()) {
+            return res.status(400).json({ message: "Hotel name and address are required", success: false })
+        }
+
+        if (!Number.isFinite(parsedRating) || parsedRating <= 0 || parsedRating > 5) {
+            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false })
+        }
+
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+            return res.status(400).json({ message: "Price must be greater than 0", success: false })
+        }
+
+        if (!amenities.length) {
+            return res.status(400).json({ message: "Select at least one amenity", success: false })
+        }
+
+        if (!imageUrl) {
+            return res.status(400).json({ message: "Hotel image is required", success: false })
         }
 
         const newHotel = new Hotel({
-            hotelName,
-            hotelAddress,
-            rating,
-            price,
+            hotelName: hotelName.trim(),
+            hotelAddress: hotelAddress.trim(),
+            rating: parsedRating,
+            price: parsedPrice,
             amenities,
             image: imageUrl,
             owner: id,
@@ -23,7 +48,8 @@ export const registerHotel = async (req, res) => {
         await newHotel.save()
         return res.status(201).json({ message: "Hotel registered successfully", success: true })
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" })
+        console.error("registerHotel error:", error)
+        return res.status(500).json({ message: "Internal Server Error", success: false })
     }
 }
 
