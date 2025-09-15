@@ -85,8 +85,9 @@ const handlePayment = async(bookingId) => {
       toast.error(error.response?.data?.message || "Failed to cancel booking")
     } finally {
       setCancelling(prev => ({ ...prev, [selectedBookingId]: false }))
-        closeCancelModal()
-
+      setShowCancelModal(false)
+      setSelectedBookingId(null)
+      setCancellationReason('')
     }
   }
 
