@@ -27,9 +27,9 @@ const MostPicked = () => {
               className='relative group rounded-lg overflow-hidden cursor-pointer transform transition-transform hover:scale-105'
               onClick={() => handleHotelClick(item._id, item.hotelName)}
             >
-              <img 
-                src={`https://anonstay-production.up.railway.app/images/${item.image}`} 
-                alt={item.hotelName} 
+              <img
+                src={item.image}
+                alt={item.hotelName}
                 className='h-64 w-80 object-cover object-top'
               />
               <div className='hidden absolute inset-0 md:flex flex-col justify-end p-4 text-white opacity-0 md:opacity-0 group-hover:md:opacity-100 group-hover:bg-[#fcae26]/60 transition-all duration-300'>

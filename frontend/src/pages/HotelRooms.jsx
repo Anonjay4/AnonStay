@@ -63,7 +63,7 @@ const HotelRooms = () => {
           <div className='bg-gray-800 rounded-lg p-6 mb-8'>
             <div className='flex flex-col md:flex-row gap-6'>
               <img
-                src={`https://anonstay-production.up.railway.app/images/${hotelData.image}`}
+                src={hotelData.image}
                 alt={hotelData.hotelName}
                 className='w-full md:w-64 h-48 object-cover rounded-lg'
               />
