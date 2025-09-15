@@ -10,6 +10,8 @@ export const registerHotel = async(req, res) => {
         const { hotelName, hotelAddress, rating, price, amenities } = req.body
         const localPath = req.file?.path
         if(!hotelName || !hotelAddress || !rating || !price || !amenities || !localPath) {
+        const image = req.file?.path
+        if(!hotelName || !hotelAddress || !rating || !price || !amenities || !image) {
             return res.status(400).json({ message: "All fields are required", success: false })
         }
         const uploaded = await cloudinary.uploader.upload(localPath, { folder: "hotels" })

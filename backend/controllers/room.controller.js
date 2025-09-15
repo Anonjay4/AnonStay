@@ -14,7 +14,7 @@ export const addRoom = async (req, res) => {
             uploadedImages.push(uploaded.secure_url)
             fs.unlinkSync(file.path)
         }
-
+        const image = req.files?.map((file) => file.path)
         const newRoom = await Room.create({
             roomType,
             hotel,

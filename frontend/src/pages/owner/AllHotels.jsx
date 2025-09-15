@@ -124,6 +124,11 @@ const AllHotels = () => {
                           alt={hotel.hotelName}
                           className="w-20 h-16 rounded-xl object-cover shadow-md"
                         />
+                          <img
+                            src={hotel.image}
+                            alt={hotel.hotelName}
+                            className="w-20 h-16 rounded-xl object-cover shadow-md"
+                          />
                         <h3 className="text-lg font-semibold text-gray-200 hover:text-yellow-600 transition-colors">
                           {hotel.hotelName}
                         </h3>
@@ -198,6 +203,11 @@ const AllHotels = () => {
                 alt={hotel.hotelName}
                 className="w-full h-40 rounded-lg object-cover"
               />
+                <img
+                  src={hotel.image}
+                  alt={hotel.hotelName}
+                  className="w-full h-40 rounded-lg object-cover"
+                />
               <div>
                 <h3 className="text-xl font-bold text-gray-200">{hotel.hotelName}</h3>
                 <p className="text-gray-400 flex items-center gap-1 text-sm">
