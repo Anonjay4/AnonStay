@@ -130,22 +130,23 @@ const Navbar = () => {
                         {
                             owner || user?(
                                 <div className="relative group inline-block">
-                                    <img src={assets.profile_icon} alt="" className="w-12 h-12 rounded-full cursor-pointer"/>
+{/*                                     <img src={assets.profile_icon} alt="" className="w-12 h-12 rounded-full cursor-pointer"/> */}
+                                    <ul className="py-2">
+                                        <li className="border rounded-full cursor-pointer text-white transition-all">
+                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/profile"} onClick={() => setIsMenuOpen(false)}>My Profile</Link>
+                                        </li>
+                                        <li className="border rounded-full cursor-pointer text-white transition-all">
+                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/my-bookings"}onClick={() => setIsMenuOpen(false)}>My Bookings</Link>
+                                        </li>
+                                        <li className="border rounded-full cursor-pointer text-white transition-all" onClick={ logout }>
+                                            <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" onClick={() => setIsMenuOpen(false)}>Logout</Link>
+                                        </li>
+                                    </ul>
 
                                     {/* Dropdown Menu */}
-                                    <div className="absolute right-0 mt-2 w-40 bg-gray-800 shadow-lg rounded-md opacity-0 group-hover:opacity-100 group-hover:visible invisible transition duration-300 z-50">
-                                        <ul className="py-2">
-                                            <li>
-                                                <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/profile"} onClick={() => setIsMenuOpen(false)}>My Profile</Link>
-                                            </li>
-                                            <li>
-                                                <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" to={"/my-bookings"}onClick={() => setIsMenuOpen(false)}>My Bookings</Link>
-                                            </li>
-                                            <li onClick={ logout }>
-                                                <Link className="block px-4 py-2 text-sm text-white hover:bg-gray-950" onClick={() => setIsMenuOpen(false)}>Logout</Link>
-                                            </li>
-                                        </ul>
-                                    </div>
+{/*                                     <div className="absolute right-0 mt-2 w-40 bg-gray-800 shadow-lg rounded-md opacity-0 group-hover:opacity-100 group-hover:visible invisible transition duration-300 z-50">
+                                        
+                                    </div> */}
                                 </div>
                             ):(
                                 <Link to={'/login'} onClick={() => setIsMenuOpen(false)}>
