@@ -282,6 +282,7 @@ export const getHotelBookings = async (req, res) => {
 // Initialize Paystack Payment
 export const initiatePaystackPayment = async (req, res) => {
     try {
+        const { bookingId, callbackUrl } = req.body;
         const { bookingId } = req.body;
         const booking = await Booking.findById(bookingId).populate('user');
 
@@ -290,6 +291,30 @@ export const initiatePaystackPayment = async (req, res) => {
         }
 
         const reference = `booking_${bookingId}_${Date.now()}`;
+
+        // determine appropriate callback URL
+        const baseCallback = callbackUrl || req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173";
+
+        const initResponse = await axios.post(
+            "https://api.paystack.co/transaction/initialize",
+            {
+                amount: booking.totalPrice * 100,
+                email: booking.user.email,
+                reference,
+                callback_url: `${baseCallback}/my-bookings`
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        await booking.updateOne({
+            paymentReference: reference,
+            paymentMethod: "Paystack"
+        });
 
         const initResponse = await axios.post(
             "https://api.paystack.co/transaction/initialize",
@@ -755,20 +780,40 @@ export const cancelUserBooking = async (req, res) => {
 
         // Handle refund logic if booking was paid
         if (booking.isPaid) {
-            // Calculate refund amount based on cancellation time
-            let refundAmount = 0
-            if (hoursDifference > 48) {
-                refundAmount = booking.totalPrice // Full refund
-            } else {
-                refundAmount = booking.totalPrice * 0.8 // 80% refund for user cancellation within 48 hours
+            // Calculate refund amount: full refund if more than 48h, otherwise 70%
+            let refundAmount = booking.totalPrice;
+            if (hoursDifference <= 48) {
+                refundAmount = booking.totalPrice * 0.7;
             }
 
-            // For mock payments, mark refund as completed immediately
-            updateData.refundInitiated = true
-            updateData.refundAmount = refundAmount
-            updateData.refundDate = new Date()
-            updateData.refundStatus = "completed"
-            updateData.refundReference = `refund_${bookingId}_${Date.now()}`
+            updateData.refundInitiated = true;
+            updateData.refundAmount = refundAmount;
+            updateData.refundDate = new Date();
+
+            // Attempt Paystack refund
+            try {
+                const refundRes = await axios.post(
+                    'https://api.paystack.co/refund',
+                    {
+                        transaction: booking.paymentReference,
+                        amount: Math.round(refundAmount * 100)
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                updateData.refundReference = refundRes.data.data.reference;
+                updateData.refundStatus = refundRes.data.data.status === 'pending' ? 'initiated' : 'completed';
+            } catch (refundError) {
+                console.log('Refund error:', refundError.response?.data || refundError);
+                updateData.refundFailed = true;
+                updateData.refundFailReason = refundError.response?.data?.message || refundError.message;
+                updateData.refundStatus = 'manual_required';
+            }
         }
 
         const updatedBooking = await Booking.findByIdAndUpdate(

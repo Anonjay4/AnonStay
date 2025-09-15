@@ -267,6 +267,10 @@ const onSubmitHandler = async (e) => {
 
         if (bookingData.paymentMethod === "Pay Online") {
           try {
+            const init = await axios.post("/api/bookings/paystack/initialize", {
+              bookingId: data.bookingId,
+              callbackUrl: window.location.origin
+            })
             const init = await axios.post("/api/bookings/paystack/initialize", { bookingId: data.bookingId })
             if (init.data.success) {
               window.location.href = init.data.authorizationUrl
