@@ -1,6 +1,4 @@
 import Room from "../models/room.model.js";
-import fs from "fs";
-import cloudinary from "../config/cloudinary.js";
 
 // Add new room
 export const addRoom = async (req, res) => {
@@ -8,13 +6,7 @@ export const addRoom = async (req, res) => {
         const { roomType, hotel, pricePerNight, description, amenities, isAvailable } = req.body
         const imageFiles = req.files || []
 
-        const uploadedImages = []
-        for (const file of imageFiles) {
-            const uploaded = await cloudinary.uploader.upload(file.path, { folder: "rooms" })
-            uploadedImages.push(uploaded.secure_url)
-            fs.unlinkSync(file.path)
-        }
-        const image = req.files?.map((file) => file.path)
+        const uploadedImages = imageFiles.map((file) => file.path)
         const newRoom = await Room.create({
             roomType,
             hotel,

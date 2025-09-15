@@ -18,6 +18,7 @@ connectDB()
 app.use(express.json())
 app.use(cors({ origin: ["http://localhost:5173", "https://anonstay.netlify.app", "https://anonstay.up.railway.app", "https://js.paystack.co"], credentials: true }))
 app.use(cookieParser())
+app.use("/uploads", express.static("uploads"))
 
 // API ENDPOINTS
 app.get("/", (req, res) => {
