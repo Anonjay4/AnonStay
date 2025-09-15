@@ -51,12 +51,20 @@ const MyBookings = () => {
 
 const handlePayment = async(bookingId) => {
   try {
+
     const res = await axios.post("/api/bookings/paystack/initialize", {
       bookingId,
       callbackUrl: window.location.origin
     })
     if (res.data.success) {
       window.location.href = res.data.authorizationUrl
+    const { data } = await axios.post("/api/bookings/paystack/initialize", {
+      bookingId,
+      callbackUrl: window.location.origin
+    })
+    const { data } = await axios.post("/api/bookings/paystack/initialize", { bookingId })
+    if (data.success) {
+      window.location.href = data.authorizationUrl
     } else {
       toast.error(res.data.message)
     }

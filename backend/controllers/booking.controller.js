@@ -5,6 +5,8 @@ import Room from '../models/room.model.js';
 import User from '../models/user.model.js';
 import axios from 'axios';
 
+import { toKobo } from '../utils/paystack.js';
+
 const awardLoyaltyPoint = async (bookingId) => {
     try {
         console.log(`🎯 Attempting to award loyalty point for booking: ${bookingId}`);
@@ -282,6 +284,7 @@ export const getHotelBookings = async (req, res) => {
 export const initiatePaystackPayment = async (req, res) => {
     try {
         const { bookingId, callbackUrl } = req.body;
+        const { bookingId } = req.body;
         const booking = await Booking.findById(bookingId).populate('user');
 
         if (!booking) {
@@ -297,6 +300,7 @@ export const initiatePaystackPayment = async (req, res) => {
             "https://api.paystack.co/transaction/initialize",
             {
                 amount: Math.round(booking.totalPrice * 100),
+                amount: booking.totalPrice * 100,
                 email: booking.user.email,
                 reference,
                 callback_url: `${baseCallback}/my-bookings`
@@ -313,6 +317,28 @@ export const initiatePaystackPayment = async (req, res) => {
             paymentReference: reference,
             paymentMethod: "Paystack"
         });
+
+        const initResponse = await axios.post(
+            "https://api.paystack.co/transaction/initialize",
+            {
+                amount: toKobo(booking.totalPrice),
+                email: booking.user.email,
+                reference,
+                callback_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/my-bookings`
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        await booking.updateOne({
+            paymentReference: reference,
+            paymentMethod: "Paystack"
+        });
+
 
         res.status(200).json({
             message: "Payment initialized successfully",
