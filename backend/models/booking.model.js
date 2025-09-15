@@ -44,7 +44,7 @@ const bookingSchema = new mongoose.Schema({
     paymentMethod: {
         type: String,
         default: "Pay At Hotel",
-        enum: ["Pay At Hotel", "Mock Payment"], // Add Mock Payment
+        enum: ["Pay At Hotel", "Paystack"],
         required: true,
     },
     isPaid: {

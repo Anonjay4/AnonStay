@@ -226,43 +226,6 @@ const SingularRoom = () => {
     return phone;
   };
 
- const handleMockPayment = async(bookingId) => {
-  try {
-    console.log("🎭 Starting mock payment for booking:", bookingId);
-    
-    // Try the new route first, fallback to old route if needed
-    let endpoint = "/api/bookings/mock-payment";
-    let data;
-    
-    try {
-      const response = await axios.post(endpoint, { bookingId });
-      data = response.data;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        // Fallback to old paystack route which might have mock enabled
-        console.log("📍 Falling back to paystack-payment route");
-        endpoint = "/api/bookings/paystack-payment";
-        const response = await axios.post(endpoint, { bookingId });
-        data = response.data;
-      } else {
-        throw error;
-      }
-    }
-    
-    if (data.success) {
-      console.log("✅ Mock payment initialized:", data);
-      toast.success('Redirecting to payment processor...');
-      navigate(`/mock-payment?reference=${data.reference}&amount=${finalPrice}`);
-    } else {
-      console.error("❌ Mock payment failed:", data.message);
-      toast.error(data.message || "Payment initialization failed");
-    }
-  } catch (error) {
-    console.error("💥 Mock payment error:", error);
-    toast.error(error.response?.data?.message || error.message || "Payment failed");
-  }
-}
-
 const onSubmitHandler = async (e) => {
   e.preventDefault()
   
@@ -301,15 +264,26 @@ const onSubmitHandler = async (e) => {
       
       if (data.success) {
         toast.success("Booking created successfully!")
-        
+
         if (bookingData.paymentMethod === "Pay Online") {
-          toast.info("You can complete payment from your bookings page")  
+          try {
+            const init = await axios.post("/api/bookings/paystack/initialize", {
+              bookingId: data.bookingId,
+              callbackUrl: window.location.origin
+            })
+            if (init.data.success) {
+              window.location.href = init.data.authorizationUrl
+            } else {
+              toast.error(init.data.message)
+              navigate("/my-bookings")
+            }
+          } catch (err) {
+            toast.error("Failed to initiate payment")
+            navigate("/my-bookings")
+          }
+        } else {
+          toast.info("You can make payment at the reception on your check-in date")
           navigate("/my-bookings")
-          scrollTo(0, 0)
-        }else{
-          toast.info("You can make payment at the reception on your check-in date")  
-          navigate("/my-bookings")
-          scrollTo(0, 0)
         }
       } else {
         toast.error(data.message)
