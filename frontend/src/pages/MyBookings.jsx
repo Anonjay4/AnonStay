@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { MapPin, Calendar, Users, CreditCard, CheckCircle, Clock, XCircle, Eye, Trash2, HandCoins, HousePlus } from "lucide-react"
+import { useSearchParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext.jsx'
 import { toast } from 'react-hot-toast'
 
@@ -12,6 +13,7 @@ const MyBookings = () => {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState(null)
   const [cancellationReason, setCancellationReason] = useState('')
+  const [searchParams] = useSearchParams()
 
   const fetchMyBookings = async () => {
     try {
@@ -26,15 +28,35 @@ const MyBookings = () => {
     }
   }
 
+  useEffect(() => {
+    const ref = searchParams.get('reference')
+    if (ref) {
+      const verify = async () => {
+        try {
+          const { data } = await axios.post('/api/bookings/verify-payment', { reference: ref })
+          if (data.success) {
+            toast.success('Payment verified successfully')
+            fetchMyBookings()
+            navigate('/my-bookings', { replace: true })
+          } else {
+            toast.error(data.message)
+          }
+        } catch (error) {
+          toast.error(error.message)
+        }
+      }
+      verify()
+    }
+  }, [searchParams])
+
 const handlePayment = async(bookingId) => {
   try {
-    const { data } = await axios.post("/api/bookings/mock-payment", { bookingId })
+    const { data } = await axios.post("/api/bookings/paystack/initialize", {
+      bookingId,
+      callbackUrl: window.location.origin
+    })
     if (data.success) {
-      toast.success('Redirecting to payment processor...');
-      // Get the booking details for amount
-      const booking = bookingData.find(b => b._id === bookingId);
-      const amount = booking ? booking.totalPrice : 0;
-      navigate(`/mock-payment?reference=${data.reference}&amount=${amount}`);
+      window.location.href = data.authorizationUrl
     } else {
       toast.error(data.message)
     }
@@ -300,12 +322,12 @@ const handlePayment = async(bookingId) => {
                       <div className='col-span-1 md:col-span-2'>
                         <div className='space-y-2'>
                           <div className='flex items-center gap-2'>
-                            {booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment" ? 
-                              <CreditCard className='w-4 h-4 text-gray-300'/> : 
+                            {booking.paymentMethod === "Paystack" ?
+                              <CreditCard className='w-4 h-4 text-gray-300'/> :
                               <HandCoins className='w-4 h-4 text-gray-300'/>
                             }
                             <span className='text-sm text-gray-400'>
-                              {booking.paymentMethod === "Mock Payment" ? "Pay Online" : booking.paymentMethod}
+                              {booking.paymentMethod === "Paystack" ? "Pay Online" : booking.paymentMethod}
                             </span>
                           </div>
                           <p className='font-bold text-lg text-gray-200'>
@@ -322,7 +344,7 @@ const handlePayment = async(bookingId) => {
                                 : <span className='bg-green-200 text-green-700 rounded-full px-2 py-1'>Paid</span>
                             )}
                           </div>
-                          {!booking.isPaid && booking.status !== "cancelled" && (booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment") && (
+                          {!booking.isPaid && booking.status !== "cancelled" && booking.paymentMethod === "Paystack" && (
                             <button
                               onClick={() => handlePayment(booking._id)}
                               className='w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-colors'
@@ -455,12 +477,12 @@ const handlePayment = async(bookingId) => {
                       <div className='col-span-1 md:col-span-2'>
                         <div className='space-y-2'>
                           <div className='flex items-center gap-2'>
-                            {booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment" ? 
-                              <CreditCard className='w-4 h-4 text-gray-300'/> : 
+                            {booking.paymentMethod === "Paystack" ?
+                              <CreditCard className='w-4 h-4 text-gray-300'/> :
                               <HandCoins className='w-4 h-4 text-gray-300'/>
                             }
                             <span className='text-sm text-gray-400'>
-                              {booking.paymentMethod === "Mock Payment" ? "Pay Online" : booking.paymentMethod}
+                              {booking.paymentMethod === "Paystack" ? "Pay Online" : booking.paymentMethod}
                             </span>
                           </div>
                           <p className='font-bold text-lg text-gray-200'>
@@ -477,7 +499,7 @@ const handlePayment = async(bookingId) => {
                                 : <span className='bg-green-200 text-green-700 rounded-full px-2 py-1'>Paid</span>
                             )}
                           </div>
-                          {!booking.isPaid && booking.status !== "cancelled" && (booking.paymentMethod === "Pay Online" || booking.paymentMethod === "Mock Payment") && (
+                          {!booking.isPaid && booking.status !== "cancelled" && booking.paymentMethod === "Paystack" && (
                             <button
                               onClick={() => handlePayment(booking._id)}
                               className='w-full px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors mt-2'

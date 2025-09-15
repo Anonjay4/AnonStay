@@ -22,7 +22,6 @@ import Bookings from './pages/owner/Bookings'
 import Loader from './components/Loader'
 import HotelRooms from './pages/HotelRooms'
 import UserProfile from './pages/UserProfile'
-import MockPayment from './components/MockPayment'
 
 
 const App = () => {
@@ -47,7 +46,6 @@ const App = () => {
         <Route path="/hotel/:hotelId/rooms" element={<HotelRooms />} />
         <Route path= "/loader/:nextUrl" element={<Loader/>}/>
         <Route path="/profile" element={<UserProfile />} />
-        <Route path="/mock-payment" element={<MockPayment />} />
         
         <Route path='/owner' element={owner ?<OwnerLayout/> :<Login/>}>
           <Route index element= { owner ?<AllHotels/> : <Login/>} />

@@ -24,6 +24,11 @@ app.get("/", (req, res) => {
     res.send("Hello world from server")
 })
 
+// Expose Paystack public key to frontend
+app.get("/api/paystack/public-key", (req, res) => {
+    res.json({ key: process.env.PAYSTACK_PUBLIC_KEY || "" });
+})
+
 app.use("/images", express.static("uploads"))
 app.use("/api/user", userRouter)
 app.use("/api/hotel", hotelRouter)
