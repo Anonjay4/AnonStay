@@ -274,7 +274,8 @@ const onSubmitHandler = async (e) => {
             if (init.data.success) {
               window.location.href = init.data.authorizationUrl
             } else {
-              toast.error(init.data.message)
+              // toast.error(init.data.message)
+              toast.info("Go to my bookings to complete payment")
               navigate("/my-bookings")
             }
           } catch (err) {
