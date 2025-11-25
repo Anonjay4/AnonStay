@@ -394,7 +394,7 @@ const fetchUserBookings = async () => {
                       onClick={() => navigate('/hotels')}
                       className='bg-[#fcae26] text-white px-6 py-2 rounded-lg hover:bg-[#e09b1f] transition-colors'
                     >
-                      Book Your First Hotel
+                      Book Your First Room
                     </button>
                   </div>
                 )}
