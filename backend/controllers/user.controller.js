@@ -134,7 +134,7 @@ export const login = async( req, res ) => {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
             secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-            sameSite: 'strict' // CSRF protection
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-origin cookies in production
         })
 
         return res.json({ message: "Login successful", success: true, user })
@@ -147,7 +147,11 @@ export const login = async( req, res ) => {
 // Logout function
 export const logout = async( req, res ) => {
     try {
-        res.clearCookie("token")
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        })
         return res.json({ message: "Logout successful", success: true })
     } catch (error) {
         console.error('Logout error:', error);
