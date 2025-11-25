@@ -230,7 +230,10 @@ export const bookRoom = async (req, res) => {
                 `,
         }
 
-        await transporter.sendMail(mailOptions)
+        // Send email asynchronously without blocking the response
+        transporter.sendMail(mailOptions).catch(err => {
+            console.error('Email sending failed:', err)
+        })
 
         // Return booking ID for immediate payment processing
         res.status(201).json({ 
