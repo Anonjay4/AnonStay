@@ -16,7 +16,7 @@ const app = express()
 connectDB()
 // Middlewares
 app.use(express.json())
-app.use(cors({ origin: ["http://localhost:5173", "https://anonstay.netlify.app", "https://anonstay.up.railway.app", "https://js.paystack.co"], credentials: true }))
+app.use(cors({ origin: ["http://localhost:5173", "https://anonstay.netlify.app", "https://anonstay.up.railway.app", "https://js.paystack.co"], credentials: true,   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], allowedHeaders: ['Content-Type', 'Authorization'] }))
 app.use(cookieParser())
 app.use("/uploads", express.static("uploads"))
 
