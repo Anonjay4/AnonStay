@@ -280,17 +280,23 @@ const onSubmitHandler = async (e) => {
               bookingId: data.bookingId,
               callbackUrl: window.location.origin
             })
+            
+            console.log("Paystack init response:", init.data)
+            
             if (init.data.success) {
+              console.log("Redirecting to:", init.data.authorizationUrl)
               window.location.href = init.data.authorizationUrl
             } else {
               toast.dismiss()
-              toast.error(init.data.message)
+              toast.error(init.data.message || "Payment initialization failed")
+              console.error("Paystack error:", init.data)
               setLoading(false)
               navigate("/my-bookings")
             }
           } catch (err) {
             toast.dismiss()
-            toast.error("Failed to initiate payment")
+            console.error("Paystack initialization error:", err.response?.data || err.message)
+            toast.error(err.response?.data?.message || "Failed to initiate payment")
             setLoading(false)
             navigate("/my-bookings")
           }
