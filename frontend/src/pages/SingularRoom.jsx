@@ -268,7 +268,13 @@ const onSubmitHandler = async (e) => {
         discountPercentage: useLoyaltyDiscount ? loyaltyDiscountPercentage : 0
       }
 
-      const { data } = await axios.post("/api/bookings/book", bookingPayload)
+      console.log("Creating booking with payload:", bookingPayload)
+      
+      const { data } = await axios.post("/api/bookings/book", bookingPayload, {
+        timeout: 30000 // 30 second timeout
+      })
+      
+      console.log("Booking response:", data)
       
       if (data.success) {
         toast.success("Booking created successfully!")
@@ -276,16 +282,23 @@ const onSubmitHandler = async (e) => {
         if (bookingData.paymentMethod === "Pay Online") {
           try {
             toast.loading("Redirecting to payment...")
+            console.log("Initializing Paystack payment for booking:", data.bookingId)
+            
             const init = await axios.post("/api/bookings/paystack/initialize", {
               bookingId: data.bookingId,
               callbackUrl: window.location.origin
+            }, {
+              timeout: 30000 // 30 second timeout
             })
             
             console.log("Paystack init response:", init.data)
             
             if (init.data.success) {
               console.log("Redirecting to:", init.data.authorizationUrl)
-              window.location.href = init.data.authorizationUrl
+              // Small delay to ensure user sees the toast
+              setTimeout(() => {
+                window.location.href = init.data.authorizationUrl
+              }, 500)
             } else {
               toast.dismiss()
               toast.error(init.data.message || "Payment initialization failed")
@@ -296,7 +309,14 @@ const onSubmitHandler = async (e) => {
           } catch (err) {
             toast.dismiss()
             console.error("Paystack initialization error:", err.response?.data || err.message)
-            toast.error(err.response?.data?.message || "Failed to initiate payment")
+            
+            // Check if it's a timeout error
+            if (err.code === 'ECONNABORTED') {
+              toast.error("Request timeout. Please check your connection and try again.")
+            } else {
+              toast.error(err.response?.data?.message || "Failed to initiate payment")
+            }
+            
             setLoading(false)
             navigate("/my-bookings")
           }
@@ -310,7 +330,20 @@ const onSubmitHandler = async (e) => {
       }
     }
   } catch (error) {
-    toast.error(error.response?.data?.message || error.message)
+    console.error("Booking error:", error.response?.data || error.message)
+    
+    // Check for authentication error
+    if (error.response?.status === 401) {
+      toast.error("Session expired. Please login again.")
+      setTimeout(() => {
+        navigate("/login")
+      }, 2000)
+    } else if (error.code === 'ECONNABORTED') {
+      toast.error("Request timeout. Please check your connection and try again.")
+    } else {
+      toast.error(error.response?.data?.message || error.message || "An error occurred")
+    }
+    
     setLoading(false)
   }
 }
