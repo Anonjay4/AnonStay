@@ -236,6 +236,11 @@ const onSubmitHandler = async (e) => {
     return
   }
 
+  // Prevent double submission
+  if (loading) {
+    return
+  }
+
   try {
     if (!isAvailable) {
       return checkRoomAvailability()
@@ -249,6 +254,8 @@ const onSubmitHandler = async (e) => {
         toast.error("Insufficient loyalty points")
         return
       }
+
+      setLoading(true)
 
       const bookingPayload = {
         room: room._id,
@@ -268,6 +275,7 @@ const onSubmitHandler = async (e) => {
 
         if (bookingData.paymentMethod === "Pay Online") {
           try {
+            toast.loading("Redirecting to payment...")
             const init = await axios.post("/api/bookings/paystack/initialize", {
               bookingId: data.bookingId,
               callbackUrl: window.location.origin
@@ -275,11 +283,15 @@ const onSubmitHandler = async (e) => {
             if (init.data.success) {
               window.location.href = init.data.authorizationUrl
             } else {
+              toast.dismiss()
               toast.error(init.data.message)
+              setLoading(false)
               navigate("/my-bookings")
             }
           } catch (err) {
+            toast.dismiss()
             toast.error("Failed to initiate payment")
+            setLoading(false)
             navigate("/my-bookings")
           }
         } else {
@@ -288,10 +300,12 @@ const onSubmitHandler = async (e) => {
         }
       } else {
         toast.error(data.message)
+        setLoading(false)
       }
     }
   } catch (error) {
     toast.error(error.response?.data?.message || error.message)
+    setLoading(false)
   }
 }
 
@@ -680,14 +694,15 @@ const onSubmitHandler = async (e) => {
                 )}
 
                 <button
-                  className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                      roomDiscountActive
                         ? 'bg-red-600 hover:bg-red-700 text-white'
                         : 'bg-[#fcae26] hover:bg-[#fcab1f] text-white'
                   }`}
-                  type='submit' 
+                  type='submit'
+                  disabled={loading}
                 >
-                  {isAvailable ? (roomDiscountActive ? "Book Deal Now" : "Book Now") : "Check Availability"}
+                  {loading ? "Processing..." : (isAvailable ? (roomDiscountActive ? "Book Deal Now" : "Book Now") : "Check Availability")}
                 </button>
 
                 {/* Earn Points Info */}
