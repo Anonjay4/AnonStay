@@ -478,7 +478,7 @@ export const updateBookingStatus = async (req, res) => {
                 updateData.refundReference = `refund_${bookingId}_${Date.now()}`
             }
             
-            // Send cancellation email
+            // Send cancellation email asynchronously
             const mailOptions = {
                 from: process.env.SENDER_EMAIL,
                 to: booking.user.email,
@@ -506,11 +506,10 @@ export const updateBookingStatus = async (req, res) => {
                 `,
             }
 
-            try {
-                await transporter.sendMail(mailOptions)
-            } catch (emailError) {
-                console.log("Email sending failed:", emailError)
-            }
+            // Send email without blocking the response
+            transporter.sendMail(mailOptions).catch(err => {
+                console.error('Cancellation email failed:', err)
+            })
         }
 
         const updatedBooking = await Booking.findByIdAndUpdate(
@@ -597,7 +596,7 @@ export const confirmCheckIn = async (req, res) => {
 
         console.log(`✅ Guest checked in successfully: ${bookingId}`);
 
-        // Send check-in confirmation email
+        // Send check-in confirmation email asynchronously
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
             to: booking.user.email,
@@ -619,11 +618,10 @@ export const confirmCheckIn = async (req, res) => {
             `,
         }
 
-        try {
-            await transporter.sendMail(mailOptions)
-        } catch (emailError) {
-            console.log("Email sending failed:", emailError)
-        }
+        // Send email without blocking the response
+        transporter.sendMail(mailOptions).catch(err => {
+            console.error('Check-in email failed:', err)
+        })
 
         res.status(200).json({ 
             message: "Guest checked in successfully", 
@@ -803,7 +801,7 @@ export const cancelUserBooking = async (req, res) => {
             { new: true }
         ).populate("room hotel user")
 
-        // Send cancellation confirmation email
+        // Send cancellation confirmation email asynchronously
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
             to: booking.user.email,
@@ -829,11 +827,10 @@ export const cancelUserBooking = async (req, res) => {
             `,
         }
 
-        try {
-            await transporter.sendMail(mailOptions)
-        } catch (emailError) {
-            console.log("Email sending failed:", emailError)
-        }
+        // Send email without blocking the response
+        transporter.sendMail(mailOptions).catch(err => {
+            console.error('Cancellation email failed:', err)
+        })
 
         res.status(200).json({ 
             message: "Booking cancelled successfully", 

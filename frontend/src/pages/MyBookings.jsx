@@ -89,23 +89,36 @@ const handlePayment = async(bookingId) => {
     try {
       const { data } = await axios.put(`/api/bookings/cancel/${selectedBookingId}`, {
         cancellationReason: cancellationReason || "Cancelled by user"
+      }, {
+        timeout: 30000 // 30 second timeout
       })
       
       if (data.success) {
-      toast.success("Booking cancelled successfully")
-      // Use updated booking from backend
-      const updatedBooking = data.booking
-      setBookingData(prev =>
-        prev.map(booking =>
-          booking._id === updatedBooking._id ? updatedBooking : booking
+        toast.success("Booking cancelled successfully")
+        // Use updated booking from backend
+        const updatedBooking = data.booking
+        setBookingData(prev =>
+          prev.map(booking =>
+            booking._id === updatedBooking._id ? updatedBooking : booking
+          )
         )
-      )
-    } else {
-      toast.error(data.message)
-    }
+      } else {
+        toast.error(data.message)
+      }
 
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to cancel booking")
+      console.error("Cancel booking error:", error)
+      
+      // Check if it's a timeout
+      if (error.code === 'ECONNABORTED') {
+        toast.error("Request timeout. The cancellation may have been processed. Please refresh the page.")
+        // Refresh bookings to check if it was actually cancelled
+        setTimeout(() => {
+          fetchMyBookings()
+        }, 1000)
+      } else {
+        toast.error(error.response?.data?.message || "Failed to cancel booking")
+      }
     } finally {
       setCancelling(prev => ({ ...prev, [selectedBookingId]: false }))
       setShowCancelModal(false)
